@@ -65,13 +65,14 @@ In Manual/Automatic, W = accelerate in the selected gear's direction, S = brake.
 | Space | Brake |
 | R | Toggle gear (1↔R or D↔R) |
 | C | Centre steering |
+| X | Reset the view (chase cam / first person) |
 | V | Cycle camera: top-down → chase cam (third-person, behind the car) → first person |
 | + / − (and scroll) | Zoom (top-down) |
 | E | Toggle Edit mode (pauses driving, forces top-down) |
 | P | Place learner's car (in edit mode) |
 | Ctrl+Z | Undo (edit mode) |
 | Esc | Settings |
-| Mouse | Look around (first person only); drag/select (edit mode only) |
+| Mouse | Look around: drag in chase cam, click-to-capture in first person; drag/select in edit mode |
 
 Keys must not get "stuck" when the window loses focus: on blur, all keys are released.
 
@@ -80,7 +81,7 @@ Keys must not get "stuck" when the window loses focus: on blur, all keys are rel
 ## 4. Views
 
 ### 4.1 Top-down
-- **Top-down fixed** (whole car-park section) plus a **chase cam**: a third-person view behind and above the car that swings round smoothly as it turns (like Forza/GTA). Zoom works in both.
+- **Top-down fixed** (whole car-park section) plus a **chase cam**: a third-person view behind and above the car that swings round smoothly as it turns (like Forza/GTA). Zoom works in both. In the chase cam, drag with the mouse to orbit round the car (it lifts over parked cars rather than clipping into them); once the car drives on, the view eases back behind it. X resets the view.
 - Semi-realistic look: tarmac texture, painted lines, shadows, car models with visible headlights/tail-lights and windscreen so the facing direction is obvious.
 - Front wheels visibly turn to their real angle.
 

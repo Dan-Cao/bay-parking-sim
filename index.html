@@ -1314,14 +1314,32 @@ function updateTopCam() {
   topCam.position.set(cx, 80, cz); topCam.lookAt(cx, 0, cz); topCam.updateProjectionMatrix();
 }
 // Third-person chase view: behind and above the car, swinging round smoothly as it turns.
+// Drag with the mouse to orbit; once the car drives on, the view eases back behind it.
+const chaseRay = new THREE.Raycaster();
+let chaseLift = 0.2;
+let orbitYaw = 0, orbitPitch = 0, orbitDrag = false, orbitIdle = 0, chaseLast = null;
 function updateChaseCam(dt) {
   const p = state.learner;
   if (chaseYaw === null) chaseYaw = p.h;
   chaseYaw += wrapPi(p.h - chaseYaw) * (1 - Math.exp(-dt * 3));
-  const dist = 6.5 * zoomChase, height = 2.4 * Math.sqrt(zoomChase);
-  const c = Math.cos(chaseYaw), s = Math.sin(chaseYaw);
-  chaseCam.position.set(p.x - c * dist, height, p.z - s * dist);
-  chaseCam.up.set(0, 1, 0); chaseCam.lookAt(p.x + c * 2, 0.9, p.z + s * 2);
+  const moving = chaseLast && Math.hypot(p.x - chaseLast[0], p.z - chaseLast[1]) > 1e-4; chaseLast = [p.x, p.z];
+  orbitIdle = orbitDrag ? 0 : orbitIdle + dt;
+  if (moving && orbitIdle > 1.5) { const k = 1 - Math.exp(-dt * 1.5); orbitYaw -= orbitYaw * k; orbitPitch -= orbitPitch * k; if (Math.abs(orbitYaw) + Math.abs(orbitPitch) < 0.01) orbitYaw = orbitPitch = 0; }
+  const c = Math.cos(chaseYaw), s = Math.sin(chaseYaw), tx = p.x + c, tz = p.z + s;
+  const r = 7.6 * zoomChase, a = chaseYaw + orbitYaw, target = new THREE.Vector3(tx, 0.9, tz), dir = new THREE.Vector3();
+  // when a parked car, pillar or wall is in the way, lift the camera over it; failing that, pull in
+  const blockedAt = e => {
+    dir.set(-Math.cos(a) * Math.cos(e), Math.sin(e), -Math.sin(a) * Math.cos(e));
+    chaseRay.set(target, dir); chaseRay.far = r;
+    return chaseRay.intersectObject(staticGroup, true).find(h => h.point.y > 0.05);
+  };
+  let el = clamp(Math.atan2(1.5, 7.5 * Math.sqrt(zoomChase)) + orbitPitch, rad(2), rad(80)), hit = blockedAt(el);
+  for (let e = el + rad(5); hit && e <= rad(75); e += rad(5)) { const h = blockedAt(e); if (!h) { el = e; hit = null; } }
+  if (hit) blockedAt(el);
+  chaseLift += ((el - chaseLift) || 0) * (1 - Math.exp(-dt * 6)); if (!hit) blockedAt(chaseLift);
+  const rr = hit ? Math.max(0.6, hit.distance - 0.3) : r;
+  chaseCam.position.set(tx + dir.x * rr, 0.9 + dir.y * rr, tz + dir.z * rr);
+  chaseCam.up.set(0, 1, 0); chaseCam.lookAt(tx, 0.9, tz);
   chaseCam.aspect = innerWidth / innerHeight; chaseCam.updateProjectionMatrix();
 }
 function updateFpCam() {
@@ -1365,11 +1383,14 @@ function updateHud() {
   document.getElementById('modeText').textContent = editing ? 'EDIT' : 'DRIVE';
   document.getElementById('modeText').classList.toggle('edit', editing);
   document.getElementById('camText').textContent = editing ? 'Top-down' : { 'top-fixed': 'Top-down', chase: 'Chase cam', fp: 'Driver’s seat' }[camMode];
-  document.getElementById('fpHint').style.display = camMode === 'fp' && !editing && document.pointerLockElement !== canvas ? 'block' : 'none';
+  const fpHint = document.getElementById('fpHint');
+  const hint = editing ? '' : camMode === 'fp' && document.pointerLockElement !== canvas ? 'fp' : camMode === 'chase' && (orbitYaw || orbitPitch) && !orbitDrag ? 'chase' : '';
+  fpHint.style.display = hint ? 'block' : 'none';
+  if (hint && fpHint._h !== hint) { fpHint.innerHTML = hint === 'fp' ? 'Click to look around · <kbd>Esc</kbd> releases mouse · <kbd>X</kbd> face forward' : 'Drag to look around · <kbd>X</kbd> back behind the car'; fpHint._h = hint; }
 }
 const HELP = [
   ['W', 'Accelerate (in the selected gear)'], ['S / Space', 'Brake'], ['A / D', 'Turn the wheel left / right'], ['R', 'Change gear (1 ↔ R)'],
-  ['C', 'Centre the wheel'], ['V', 'Camera: top-down → chase → driver’s seat'], ['+ / − / wheel', 'Zoom'], ['M', 'Mirror / camera strip'],
+  ['C', 'Centre the wheel'], ['V', 'Camera: top-down → chase → driver’s seat'], ['Mouse', 'Look around (chase: drag · driver’s seat: click)'], ['X', 'Reset the view'], ['+ / − / wheel', 'Zoom'], ['M', 'Mirror / camera strip'],
   ['E', 'Edit mode'], ['Esc', 'Settings'], ['H', 'Hide this help'],
 ];
 function renderHelp() {
@@ -1384,7 +1405,7 @@ document.getElementById('helpHead').onclick = () => document.getElementById('hel
 function cycleCamera() {
   if (editing) return;
   camMode = { 'top-fixed': 'chase', chase: 'fp', fp: 'top-fixed' }[camMode];
-  chaseYaw = null;
+  chaseYaw = null; orbitYaw = orbitPitch = 0;
   if (camMode !== 'fp' && document.pointerLockElement) document.exitPointerLock();
   layoutStrip();
 }
@@ -1488,6 +1509,7 @@ function addItem(kind) {
 canvas.addEventListener('pointerdown', ev => {
   initAudio(); canvas.focus();
   if (camMode === 'fp' && !editing) { canvas.requestPointerLock(); return; }
+  if (camMode === 'chase' && !editing && ev.button === 0) { orbitDrag = true; canvas.setPointerCapture(ev.pointerId); canvas.style.cursor = 'grabbing'; return; }
   if (!editing || ev.button !== 0) return;
   const w = screenToWorld(ev); mouseWorld = w;
   const it = pick(w); select(it);
@@ -1497,6 +1519,7 @@ canvas.addEventListener('pointermove', ev => {
   if (document.pointerLockElement === canvas) {
     yaw = clamp(yaw - ev.movementX * 0.0025, -rad(165), rad(165)); pitch = clamp(pitch - ev.movementY * 0.0025, -rad(60), rad(60)); return;
   }
+  if (orbitDrag) { orbitYaw = wrapPi(orbitYaw + ev.movementX * 0.005); orbitPitch = clamp(orbitPitch + ev.movementY * 0.004, -rad(12), rad(70)); return; }
   if (!editing) return;
   const w = screenToWorld(ev); mouseWorld = w;
   if (drag) {
@@ -1506,6 +1529,7 @@ canvas.addEventListener('pointermove', ev => {
   canvas.style.cursor = drag ? 'grabbing' : pick(w) ? 'grab' : 'default';
 });
 canvas.addEventListener('pointerup', ev => {
+  if (orbitDrag) { orbitDrag = false; canvas.style.cursor = ''; return; }
   if (!drag) return;
   if (!drag.moved) undoStack.pop();
   else { if (!ev.altKey) snapItem(drag.it); else if (drag.it.kind === 'car') drag.it.ref.bay = null; commitEdit(); }
@@ -1573,7 +1597,7 @@ addEventListener('keydown', ev => {
     if (ev.code === 'KeyR' && settings.trans !== 'arcade') gear = gear === 'R' ? 'F' : 'R';
     if (ev.code === 'KeyC') steer = 0;
     if (ev.code === 'KeyV') cycleCamera();
-    if (ev.code === 'KeyX') { yaw = 0; pitch = -0.08; }
+    if (ev.code === 'KeyX') { yaw = 0; pitch = -0.08; orbitYaw = orbitPitch = 0; }
   }
 });
 addEventListener('keyup', ev => { keys[ev.code] = false; });
@@ -1754,7 +1778,7 @@ if (testMode) {
 }
 requestAnimationFrame(frame);
 // debugging hook for scripted checks from the console
-window.__sim = { get state() { return state; }, get LG() { return LG; }, evaluatePark, learnerHits, keys, tick: dt => updateDrive(dt), setSteer: s => { steer = s; }, setGear: g => { gear = g; }, setLook: (y, p) => { yaw = y; pitch = p; }, get attempt() { return attempt; }, get lastResult() { return lastResult; } };
+window.__sim = { get state() { return state; }, get LG() { return LG; }, evaluatePark, learnerHits, keys, tick: dt => updateDrive(dt), setSteer: s => { steer = s; }, setGear: g => { gear = g; }, setLook: (y, p) => { yaw = y; pitch = p; }, setOrbit: (y, p) => { orbitYaw = y; orbitPitch = p; }, get orbit() { return [orbitYaw, orbitPitch]; }, get attempt() { return attempt; }, get lastResult() { return lastResult; } };
 </script>
 </body>
 </html>
