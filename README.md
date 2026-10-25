@@ -10,20 +10,18 @@ The car pivots about its rear axle with a realistic turning circle, so reference
 
 The easiest way is the [published page](https://dan-cao.github.io/bay-parking-sim/): nothing to install, just open it in Chrome, Edge or Firefox.
 
-To run it locally, note that it's a single file with no build step.
+To run it locally, there's no build step, but the code is split into JavaScript modules, which browsers won't load from a page opened straight from disk. Serve the folder instead:
 
 1. Download or clone this folder.
-2. Open `index.html` in Chrome, Edge or Firefox.
+2. In the folder, run:
+
+   ```bash
+   python -m http.server 8000
+   ```
+
+3. Go to http://localhost:8000 in Chrome, Edge or Firefox.
 
 You need an internet connection, because the 3D library ([three.js](https://threejs.org)) loads from a CDN.
-
-If your browser blocks the page when it's opened from disk, serve the folder instead:
-
-```bash
-python -m http.server 8000
-```
-
-Then go to http://localhost:8000.
 
 ## How a lesson works
 
@@ -112,3 +110,28 @@ The default car uses approximate published figures: 4.06 m long, 1.72 m wide (1.
 ## Test page
 
 Open `index.html?test` to run the checker's test scenes: cars placed at known positions (2° and 6° crooked, tyre on and over a line, mirror over a line, bumper past a line, door gaps, contacts, turning circle), with expected and actual results side by side. Click a row to see the scene.
+
+## Code layout
+
+No build step: `index.html` loads `src/main.js` as an ES module, and three.js comes from a CDN via an import map.
+
+| File | What's in it |
+|---|---|
+| `index.html` | Page markup: HUD, edit panel, scenario picker, settings |
+| `style.css` | All styling |
+| `src/main.js` | Entry point: the main loop and boot |
+| `src/state.js` | Shared mutable state (`S`): the scenario, steering, camera mode, current attempt and so on |
+| `src/config.js` | Constants, car and scenario presets, saved settings |
+| `src/geometry.js` | Pure 2D maths: car dimensions, the bicycle model, bay layout |
+| `src/scene.js` | three.js renderer, lights, cameras, materials, mesh helpers |
+| `src/carModels.js` | Exterior car meshes and the top-down overlay |
+| `src/interior.js` | The driver's-seat interior |
+| `src/world.js` | The learner car, the static scene and scenario loading |
+| `src/checker.js` | Collisions, the park checker and the result panel |
+| `src/driving.js` | Driving the car each frame |
+| `src/cameras.js` | Top-down, chase, driver's-seat and mirror cameras, and the mirror strip |
+| `src/hud.js` | Gear and steering HUD, controls help |
+| `src/input.js` | Edit mode, mouse and keyboard |
+| `src/modals.js` | Scenario picker and settings dialogs |
+| `src/audio.js` | Parking-sensor beeps and the contact bump |
+| `src/tests.js` | The `?test` page |
