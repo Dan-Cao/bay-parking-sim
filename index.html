@@ -835,7 +835,9 @@ function makeInterior(g, color) {
 
   // Steering wheel: rim, three spokes, hub and a red top-centre marker.
   const sw = new THREE.Group(); sw.position.set(e + 0.58, g.eyeY - 0.4, dr);
-  sw.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(-1, 0.5, 0).normalize());
+  // face the driver, tilted back, with the wheel's "up" kept upright so the top marker sits at 12 o'clock when centred
+  const swZ = new THREE.Vector3(-1, 0.5, 0).normalize(), swY = new THREE.Vector3(0, 1, 0).addScaledVector(swZ, -swZ.y).normalize();
+  sw.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(swY, swZ), swY, swZ));
   const spin = new THREE.Group(); sw.add(spin);
   spin.add(new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.022, 10, 40), MAT.black));
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.04, 20).rotateX(Math.PI / 2), MAT.dash); spin.add(hub);
