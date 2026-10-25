@@ -282,6 +282,14 @@ const PRESETS = {
       { row: -1, idx: 1, type: 'hatch' }, { row: -1, idx: 2, type: 'sedan' }, { row: -1, idx: 4, type: 'van' }, { row: -1, idx: 6, type: 'suv' },
     ],
   },
+  angled: {
+    name: 'Angled bays', desc: '45° bays on both sides of a one-way aisle, with a few cars parked. Drive in forwards, or reverse out to practise exiting.',
+    layout: { rows: 2, baysPerRow: 8, angle: 45, ...UK_BAY, aisleWidth: 5.0, back: 'kerb', pillars: false },
+    cars: [
+      { row: 1, idx: 0, type: 'hatch' }, { row: 1, idx: 2, type: 'sedan' }, { row: 1, idx: 4, type: 'suv' }, { row: 1, idx: 6, type: 'hatch' },
+      { row: -1, idx: 1, type: 'sedan' }, { row: -1, idx: 2, type: 'hatch' }, { row: -1, idx: 4, type: 'van' }, { row: -1, idx: 7, type: 'sedan' },
+    ],
+  },
   narrow: {
     name: 'Narrow aisle', desc: 'A 4.6 m aisle with a full row opposite, walls and pillars, like a multi-storey. Little room to swing out.',
     layout: { rows: 2, baysPerRow: 8, angle: 90, ...UK_BAY, aisleWidth: 4.6, back: 'wall', pillars: true },

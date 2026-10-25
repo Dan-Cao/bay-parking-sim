@@ -122,7 +122,8 @@ Car-relative dots that grow and turn yellow when lined up with a bay line (no gu
 1. **Empty lot**: one clear row, no other cars
 2. **Between two cars**: target gap with neighbours parked straight
 3. **Tight / wonky neighbour**: one neighbour over the line or angled
-4. **Narrow aisle**: little room to swing out
+4. **Angled bays**: 45° bays both sides of a one-way aisle, some parked cars
+5. **Narrow aisle**: little room to swing out
 
 ### 5.3 Maneuvers supported
 Reverse into a bay, forward into a bay, angled bays (either direction), exiting a bay.
