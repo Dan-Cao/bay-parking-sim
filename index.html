@@ -1216,6 +1216,9 @@ function updateTopCam() {
   }
   const Ht = 2 * halfH / avail, Wt = Ht * asp, bottom = -halfH - Ht * botPx / H;
   Object.assign(topCam, { left: -Wt / 2, right: Wt / 2, bottom, top: bottom + Ht });
+  // follow view turns with the car so it always points up the screen; fixed view keeps north up
+  const follow = camMode === 'top-follow' && !editing, h = state.learner.h;
+  if (follow) topCam.up.set(Math.cos(h), 0, Math.sin(h)); else topCam.up.set(0, 0, -1);
   topCam.position.set(cx, 80, cz); topCam.lookAt(cx, 0, cz); topCam.updateProjectionMatrix();
 }
 function updateFpCam() {
