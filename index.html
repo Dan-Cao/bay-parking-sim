@@ -795,7 +795,7 @@ function makeInterior(g, color) {
   box(dashF + 0.02, dashF + 0.2, belt - 0.01, belt + 0.07, dr - 0.21, dr + 0.21, MAT.dashTop);                 // instrument cowl
   const clusterCanvas = document.createElement('canvas'); clusterCanvas.width = 512; clusterCanvas.height = 160;
   const clusterTex = new THREE.CanvasTexture(clusterCanvas); clusterTex.colorSpace = THREE.SRGBColorSpace;
-  facePlane(0.36, 0.11, dashF + 0.015, belt - 0.025, dr, new THREE.MeshBasicMaterial({ map: clusterTex }), 0.25);
+  facePlane(0.36, 0.11, dashF - 0.005, belt - 0.03, dr, new THREE.MeshBasicMaterial({ map: clusterTex }), 0.25);
   for (const r of [-W / 2 + 0.2, -0.12, 0.12, W / 2 - 0.2]) facePlane(0.14, 0.06, dashF - 0.002, belt - 0.12, r, MAT.black);   // air vents
   facePlane(0.4, 0.004, dashF - 0.003, belt - 0.2, -dr, MAT.black); facePlane(0.4, 0.004, dashF - 0.003, belt - 0.29, -dr, MAT.black); // glovebox lid
   // centre stack with a screen showing the rear camera
@@ -810,7 +810,10 @@ function makeInterior(g, color) {
   beam([e - 0.05, 0.5, 0], [e + 0.15, 0.56, 0], 0.035, 0.03, MAT.black);
 
   // Carpeted floor, front bulkhead behind the footwells, raised sills and pedals.
-  box(-L / 2 + 0.2, ws + 0.05, 0.22, 0.26, -W / 2 + 0.04, W / 2 - 0.04, MAT.carpet);
+  box(-L / 2 + 0.12, ws + 0.05, 0.22, 0.26, -W / 2 + 0.04, W / 2 - 0.04, MAT.carpet);
+  // boot: back panel up to the parcel shelf and side panels, so you can't see the road through the back
+  box(-L / 2 + 0.12, -L / 2 + 0.2, 0.22, belt, -W / 2 + 0.04, W / 2 - 0.04, MAT.door);
+  for (const s of [-1, 1]) box(-L / 2 + 0.12, -L / 2 + 0.32, 0.22, belt + 0.02, s * (W / 2 - 0.1), s * (W / 2 - 0.02), MAT.door);
   box(ws, ws + 0.05, 0.26, belt - 0.32, -W / 2 + 0.08, W / 2 - 0.08, MAT.carpet);
   for (const s of [-1, 1]) box(-L / 2 + 0.3, ws, 0.26, 0.34, s * (W / 2 - 0.1), s * (W / 2 - 0.02), MAT.door);
   for (const [r, w] of [[dr - 0.16, 0.08], [dr - 0.02, 0.09], [dr + 0.12, 0.07]]) beam([ws - 0.12, 0.3, r], [ws - 0.08, 0.42, r], w, 0.02, MAT.metal);
