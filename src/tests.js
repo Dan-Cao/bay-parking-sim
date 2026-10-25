@@ -33,6 +33,11 @@ export function runTests() {
   park('Hatches centred either side', {}, { door: 'warn' }, { cars: [{ idx: 2, type: 'hatch' }, { idx: 4, type: 'hatch' }], note: 'Door room is measured to the neighbour’s mirror.' });
   park('60° bay, centred, forwards', { forward: true }, {}, { layout: { angle: 60 } });
   park('45° bay, 3° crooked, forwards', { forward: true, rot: 3 }, {}, { layout: { angle: 45 } });
+  const PAR = { layout: { angle: 0, bayWidth: 2.1, bayLength: 6.0 } };
+  park('Parallel bay, centred', {}, { kerb: 'pass' }, PAR);
+  park('Parallel bay, 15 cm out from centre', { lat: -0.15 }, { kerb: 'warn', body: 'fail' }, { ...PAR, note: 'In a 2.1 m bay, sitting this far from the kerb puts the road-side mirror over the line.' });
+  park('Parallel bay, 3° crooked', { rot: 3 }, { kerb: 'pass' }, PAR);
+  park('Parallel bay, mirror over the kerb line', { lat: 1.05 + HALF_LINE + 0.03 - mh }, { kerb: 'pass' }, { ...PAR, note: 'Mirrors may overhang the pavement; only the body counts against the kerb line.' });
   C.push({ name: 'Rear bumper 5 cm from wall → no contact', kind: 'collide', gap: 0.05, expectHit: false });
   C.push({ name: 'Rear bumper 1 cm into wall → contact', kind: 'collide', gap: -0.01, expectHit: true });
   C.push({ name: 'Mirror 5 cm from pillar → no contact', kind: 'collideMirror', gap: 0.05, expectHit: false });

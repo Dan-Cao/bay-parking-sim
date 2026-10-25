@@ -102,9 +102,9 @@ export function loadPreset(id) {
     const forward = !!c.flip, free = c.lat || c.rot;
     S.state.cars.push({ id: S.nextId++, type: c.type, color: PALETTE[(i * 3 + c.idx) % PALETTE.length], ...poseInBay(b, forward, c.lat || 0, 0, c.rot || 0), bay: free ? null : { row: b.row, idx: b.idx, forward } });
   });
-  const ex = rowExtents(bs), lane = -S.state.layout.aisleWidth / 4;
-  S.state.learner = { x: ex.x0 - 6, z: lane, h: 0 };
-  S.state.exit = { x: ex.x1 + 5, z: lane };
+  const ex = rowExtents(bs), right = p.start === 'right', lane = (right ? 1 : -1) * S.state.layout.aisleWidth / 4;
+  S.state.learner = right ? { x: ex.x1 + 6, z: lane, h: Math.PI } : { x: ex.x0 - 6, z: lane, h: 0 };
+  S.state.exit = { x: right ? ex.x0 - 5 : ex.x1 + 5, z: lane };
   S.undoStack = []; S.steer = 0; S.gear = 'F';
   rebuildStatic(); S.attemptStart = clone(S.state); newAttempt();
   S.zoomFixed = 1;
