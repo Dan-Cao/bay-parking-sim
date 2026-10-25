@@ -104,7 +104,7 @@
   #testPanel .small { color: var(--muted); font-size: 0.78rem; }
 </style>
 <script type="importmap">
-  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
 </head>
 <body>
@@ -227,6 +227,7 @@
 
 <script type="module">
 import * as THREE from 'three';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // ===================================================================
 // Constants & data
@@ -243,16 +244,16 @@ const SENSOR_RANGE = 1.5;
 
 // Learner car presets. MiTo figures are manufacturer-ish; turning circle is treated as kerb-to-kerb.
 const LEARNER_PRESETS = {
-  mito:  { length: 4.063, width: 1.72, mirrorWidth: 1.94, height: 1.446, wheelbase: 2.511, frontOverhang: 0.84, track: 1.47, turningCircle: 11.3, lockToLock: 3.6, doorLength: 1.25 },
-  hatch: { length: 3.90,  width: 1.73, mirrorWidth: 1.95, height: 1.48,  wheelbase: 2.45,  frontOverhang: 0.80, track: 1.48, turningCircle: 10.2, lockToLock: 2.8, doorLength: 1.00 },
-  sedan: { length: 4.65,  width: 1.80, mirrorWidth: 2.05, height: 1.45,  wheelbase: 2.70,  frontOverhang: 0.95, track: 1.55, turningCircle: 11.0, lockToLock: 2.8, doorLength: 1.05 },
-  suv:   { length: 4.50,  width: 1.85, mirrorWidth: 2.10, height: 1.65,  wheelbase: 2.67,  frontOverhang: 0.92, track: 1.58, turningCircle: 11.2, lockToLock: 3.0, doorLength: 1.05 },
+  mito:  { length: 4.063, width: 1.72, mirrorWidth: 1.94, height: 1.446, wheelbase: 2.511, frontOverhang: 0.84, track: 1.47, turningCircle: 11.3, lockToLock: 3.6, doorLength: 1.25, style: 'hatch' },
+  hatch: { length: 3.90,  width: 1.73, mirrorWidth: 1.95, height: 1.48,  wheelbase: 2.45,  frontOverhang: 0.80, track: 1.48, turningCircle: 10.2, lockToLock: 2.8, doorLength: 1.00, style: 'hatch' },
+  sedan: { length: 4.65,  width: 1.80, mirrorWidth: 2.05, height: 1.45,  wheelbase: 2.70,  frontOverhang: 0.95, track: 1.55, turningCircle: 11.0, lockToLock: 2.8, doorLength: 1.05, style: 'sedan' },
+  suv:   { length: 4.50,  width: 1.85, mirrorWidth: 2.10, height: 1.65,  wheelbase: 2.67,  frontOverhang: 0.92, track: 1.58, turningCircle: 11.2, lockToLock: 3.0, doorLength: 1.05, style: 'suv' },
 };
 const PARKED_TYPES = {
-  hatch: { length: 3.90, width: 1.73, mirrorWidth: 1.95, height: 1.48, wheelbase: 2.45, frontOverhang: 0.80, track: 1.48 },
-  sedan: { length: 4.65, width: 1.80, mirrorWidth: 2.05, height: 1.45, wheelbase: 2.70, frontOverhang: 0.95, track: 1.55 },
-  suv:   { length: 4.60, width: 1.88, mirrorWidth: 2.12, height: 1.70, wheelbase: 2.70, frontOverhang: 0.92, track: 1.60 },
-  van:   { length: 5.10, width: 2.00, mirrorWidth: 2.30, height: 2.00, wheelbase: 3.10, frontOverhang: 0.95, track: 1.70 },
+  hatch: { length: 3.90, width: 1.73, mirrorWidth: 1.95, height: 1.48, wheelbase: 2.45, frontOverhang: 0.80, track: 1.48, style: 'hatch' },
+  sedan: { length: 4.65, width: 1.80, mirrorWidth: 2.05, height: 1.45, wheelbase: 2.70, frontOverhang: 0.95, track: 1.55, style: 'sedan' },
+  suv:   { length: 4.60, width: 1.88, mirrorWidth: 2.12, height: 1.70, wheelbase: 2.70, frontOverhang: 0.92, track: 1.60, style: 'suv' },
+  van:   { length: 5.10, width: 2.00, mirrorWidth: 2.30, height: 2.00, wheelbase: 3.10, frontOverhang: 0.95, track: 1.70, style: 'van' },
 };
 const PALETTE = [0x2b4c7e, 0xd9d9d9, 0x1d1d1d, 0x8a8f96, 0x6a2a2a, 0xf0f0f0, 0x274d3a, 0x3c5a99, 0x9c7a3c, 0x55606e];
 const LEARNER_COLOR = 0xa3121b;
@@ -570,7 +571,12 @@ const MAT = {
   kerb: new THREE.MeshStandardMaterial({ color: 0xb9b6ad, roughness: 0.9 }),
   wall: new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 }),
   pillar: new THREE.MeshStandardMaterial({ color: 0xc8c4b8, roughness: 0.85 }),
-  glass: new THREE.MeshStandardMaterial({ color: 0x18222d, roughness: 0.08, metalness: 0.7 }),
+  glass: new THREE.MeshStandardMaterial({ color: 0x18222d, roughness: 0.08, metalness: 0.7, side: THREE.DoubleSide }),
+  rim: new THREE.MeshStandardMaterial({ color: 0xa4a9af, roughness: 0.35, metalness: 0.8 }),
+  arch: new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 1 }),
+  black: new THREE.MeshStandardMaterial({ color: 0x141517, roughness: 0.6 }),
+  plateF: new THREE.MeshStandardMaterial({ color: 0xf1f1ec, roughness: 0.5 }),
+  plateR: new THREE.MeshStandardMaterial({ color: 0xf3c400, roughness: 0.5 }),
   tyre: new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 }),
   head: new THREE.MeshStandardMaterial({ color: 0xfff6d8, emissive: 0xfff2c0, emissiveIntensity: 0.9 }),
   tail: new THREE.MeshStandardMaterial({ color: 0xc81010, emissive: 0xa00000, emissiveIntensity: 0.8 }),
@@ -582,7 +588,11 @@ const MAT = {
 const paintCache = new Map();
 function paintMat(c) { if (!paintCache.has(c)) paintCache.set(c, new THREE.MeshStandardMaterial({ color: c, roughness: 0.4, metalness: 0.35 })); return paintCache.get(c); }
 function overlayMat(color, opacity = 1) { return new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthTest: false, depthWrite: false, side: THREE.DoubleSide }); }
-const WHEEL_GEOM = new THREE.CylinderGeometry(TYRE_R, TYRE_R, TYRE_W, 20); WHEEL_GEOM.rotateX(Math.PI / 2); WHEEL_GEOM.userData.keep = true;
+const keepGeom = g => { g.userData.keep = true; return g; };
+const WHEEL_GEOM = keepGeom(new THREE.CylinderGeometry(TYRE_R, TYRE_R, TYRE_W, 24).rotateX(Math.PI / 2));
+const RIM_GEOM = keepGeom(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 20).rotateX(Math.PI / 2));
+const HUB_GEOM = keepGeom(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 12).rotateX(Math.PI / 2));
+const ARCH_GEOM = keepGeom(new THREE.RingGeometry(TYRE_R + 0.02, TYRE_R + 0.075, 20, 1, 0, Math.PI));
 
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), MAT.ground);
 ground.geometry.rotateX(-Math.PI / 2); ground.receiveShadow = true; scene.add(ground);
@@ -612,33 +622,98 @@ function overlayMesh(geom, mat, order = 20) { const m = new THREE.Mesh(geom, mat
 // ===================================================================
 // Car meshes
 // ===================================================================
+// Body styles: where the cabin ends at the back, how raked the rear glass is, how much the
+// greenhouse tapers, and how far the bonnet / tail slope down.
+const CAR_STYLES = {
+  hatch: { rear: 0.25, rakeR: 0.32, topK: 0.82, dropF: 0.13, dropR: 0.04, doors: 2 },
+  sedan: { rear: 0.95, rakeR: 0.5, topK: 0.82, dropF: 0.11, dropR: 0.05, doors: 4 },
+  suv:   { rear: 0.2, rakeR: 0.16, topK: 0.88, dropF: 0.09, dropR: 0.02, doors: 4 },
+  van:   { rear: 0.06, rakeR: 0.03, topK: 0.94, dropF: 0.16, dropR: 0, doors: 2, cabForward: 0.35, panelVan: true },
+};
+function quadGeom(pts) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts.flat(), 3)); g.setIndex([0, 1, 2, 0, 2, 3]); g.computeVertexNormals(); return g;
+}
+function boxAt(sx, sy, sz, x, y, z, mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat); m.position.set(x, y, z); return m; }
+
 function makeCarMesh(g, color, learner) {
+  const st = CAR_STYLES[g.style] || CAR_STYLES.hatch;
   const grp = new THREE.Group(), paint = paintMat(color);
-  const add = (m, layer) => { m.castShadow = true; if (learner) m.layers.set(layer); grp.add(m); return m; };
+  const add = (m, layer = 1) => { m.castShadow = true; if (learner) m.traverse(o => o.layers.set(layer)); grp.add(m); return m; };
   const H = g.height, belt = g.beltY, L = g.length, W = g.width;
-  const shape = new THREE.Shape(g.body.map(([f, r]) => new THREE.Vector2(f, r)));
-  const lg = new THREE.ExtrudeGeometry(shape, { depth: belt - 0.2, bevelEnabled: false });
-  lg.rotateX(Math.PI / 2); lg.translate(0, belt, 0);
-  add(new THREE.Mesh(lg, paint), 1);
-  // greenhouse: raked windscreen and tailgate
-  const cf0 = -L / 2 + 0.28, cf1 = g.frontAxleF - 0.3, cabH = H - belt, cabW = W - 0.1;
-  const cg = new THREE.BoxGeometry(cf1 - cf0, cabH, cabW); cg.translate((cf0 + cf1) / 2, belt + cabH / 2, 0);
-  const rakeF = Math.min(0.75, (cf1 - cf0) * 0.3), rakeR = 0.3, pos = cg.attributes.position;
-  for (let i = 0; i < pos.count; i++) if (pos.getY(i) > belt + cabH / 2) { const x = pos.getX(i); pos.setX(i, x > (cf0 + cf1) / 2 ? x - rakeF : x + rakeR); pos.setZ(i, pos.getZ(i) * 0.82); }
-  cg.computeVertexNormals();
-  add(new THREE.Mesh(cg, MAT.glass), 1);
-  const rf0 = cf0 + rakeR + 0.1, rf1 = cf1 - rakeF - 0.12;
-  const rg = new THREE.BoxGeometry(rf1 - rf0, 0.04, cabW * 0.82 - 0.06); rg.translate((rf0 + rf1) / 2, H + 0.01, 0);
-  add(new THREE.Mesh(rg, paint), 1);
-  for (const s of [-1, 1]) {
-    const hl = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.36), MAT.head); hl.position.set(L / 2 - 0.1, belt - 0.04, s * (W / 2 - 0.27)); add(hl, 1);
-    const tl = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.3), MAT.tail); tl.position.set(-L / 2 + 0.08, belt - 0.04, s * (W / 2 - 0.22)); add(tl, 1);
+
+  // Lower body: bevelled extrusion of the plan outline, with the bonnet and tail sloping down.
+  const bev = 0.06, sill = 0.24;
+  const shape = new THREE.Shape(roundedRect(L - 2 * bev, W - 2 * bev, 0.28 - bev).map(([f, r]) => new THREE.Vector2(f, r)));
+  let lg = new THREE.ExtrudeGeometry(shape, { depth: belt - sill - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 4 });
+  lg.rotateX(Math.PI / 2); lg.translate(0, belt - bev, 0);
+  const ws = g.frontAxleF - 0.3 + (st.cabForward || 0), tailX = -L / 2 + st.rear;
+  const lp = lg.attributes.position;
+  for (let i = 0; i < lp.count; i++) {
+    const x = lp.getX(i), y = lp.getY(i), t = clamp((y - (belt - 0.4)) / 0.4, 0, 1);
+    const d = x > ws ? st.dropF * Math.pow((x - ws) / (L / 2 - ws), 1.5) : x < tailX ? st.dropR * (tailX - x) / st.rear : 0;
+    lp.setY(i, y - d * t);
   }
+  lg.deleteAttribute('uv'); lg.deleteAttribute('normal'); lg = mergeVertices(lg); lg.computeVertexNormals();
+  add(new THREE.Mesh(lg, paint));
+
+  // Greenhouse in body colour, with separate glass panels leaving pillars between them.
+  const cf0 = tailX, cf1 = ws, cabH = H - belt, bw = (W - 0.12) / 2, tw = bw * st.topK;
+  const rakeF = Math.min(0.75, (cf1 - cf0) * 0.3) * (st.panelVan ? 0.7 : 1), rakeR = st.rakeR;
+  const cg = new THREE.BoxGeometry(cf1 - cf0, cabH, 2 * bw); cg.translate((cf0 + cf1) / 2, belt + cabH / 2, 0);
+  const cp = cg.attributes.position;
+  for (let i = 0; i < cp.count; i++) if (cp.getY(i) > belt + cabH / 2) { const x = cp.getX(i); cp.setX(i, x > (cf0 + cf1) / 2 ? x - rakeF : x + rakeR); cp.setZ(i, cp.getZ(i) * st.topK); }
+  cg.computeVertexNormals();
+  add(new THREE.Mesh(cg, paint));
+  const yA = belt + 0.05, yB = H - 0.05, o = 0.006;
+  const hw = y => bw + (tw - bw) * (y - belt) / cabH;
+  const xF = y => cf1 - rakeF * (y - belt) / cabH, xR = y => cf0 + rakeR * (y - belt) / cabH;
+  const glass = pts => add(new THREE.Mesh(quadGeom(pts), MAT.glass));
+  const nF = [cabH, rakeF].map(v => v / Math.hypot(cabH, rakeF) * o), nR = [-cabH, rakeR].map(v => v / Math.hypot(cabH, rakeR) * o);
+  glass([[xF(yA) + nF[0], yA + nF[1], -hw(yA) * 0.88], [xF(yA) + nF[0], yA + nF[1], hw(yA) * 0.88], [xF(yB) + nF[0], yB + nF[1], hw(yB) * 0.88], [xF(yB) + nF[0], yB + nF[1], -hw(yB) * 0.88]]);
+  glass([[xR(yA) + nR[0], yA + nR[1], -hw(yA) * 0.8], [xR(yA) + nR[0], yA + nR[1], hw(yA) * 0.8], [xR(yB) + nR[0], yB + nR[1], hw(yB) * 0.8], [xR(yB) + nR[0], yB + nR[1], -hw(yB) * 0.8]]);  const bp = Math.max(g.eyeF - 0.45, cf0 + 0.6);   // B-pillar
+  for (const s of [-1, 1]) {
+    const side = (x0, x1) => { // x0/x1: functions of y giving the window's rear / front edge
+      if (x1(yA) - x0(yA) < 0.12 || x1(yB) - x0(yB) < 0.12) return;
+      glass([[x0(yA), yA, s * (hw(yA) + o)], [x1(yA), yA, s * (hw(yA) + o)], [x1(yB), yB, s * (hw(yB) + o)], [x0(yB), yB, s * (hw(yB) + o)]]);
+    };
+    side(() => bp + 0.06, y => xF(y) - 0.07);
+    if (!st.panelVan) side(y => xR(y) + 0.07, () => bp - 0.06);
+  }
+
+  // Lights, grille, bumpers and UK plates (white front, yellow rear).
+  const yNose = belt - st.dropF, yTail = belt - st.dropR;
+  for (const s of [-1, 1]) {
+    add(boxAt(0.18, 0.1, 0.38, L / 2 - 0.085, yNose - 0.03, s * (W / 2 - 0.3), MAT.head));
+    add(boxAt(0.12, 0.12, 0.32, -L / 2 + 0.055, yTail - 0.05, s * (W / 2 - 0.24), MAT.tail));
+  }
+  add(boxAt(0.03, 0.09, W * 0.35, L / 2 + 0.002, yNose - 0.13, 0, MAT.black));
+  add(boxAt(0.03, 0.08, W - 0.6, L / 2 + 0.002, 0.36, 0, MAT.black));
+  add(boxAt(0.03, 0.06, W - 0.5, -L / 2 - 0.002, 0.34, 0, MAT.black));
+  add(boxAt(0.01, 0.11, 0.52, L / 2 + 0.008, 0.48, 0, MAT.plateF));
+  add(boxAt(0.01, 0.11, 0.52, -L / 2 - 0.008, Math.min(0.62, yTail - 0.2), 0, MAT.plateR));
+
+  // Door shut lines and handles.
+  const doorLines = [g.doorFront, g.doorRear]; if (st.doors === 4) doorLines.push(g.doorRear - 0.9);
+  for (const s of [-1, 1]) {
+    for (const f of doorLines) if (f > -L / 2 + 0.4) add(boxAt(0.012, belt - 0.36, 0.006, f, (belt + 0.32) / 2, s * (W / 2 + 0.001), MAT.black));
+    add(boxAt(0.13, 0.03, 0.012, g.doorRear + 0.15, belt - 0.12, s * (W / 2 + 0.004), MAT.black));
+  }
+
+  // Wheels: tyre, rim and hub, pushed out flush with the body side, under a dark arch.
   const front = [];
   for (const w of g.wheels) {
-    const m = new THREE.Mesh(WHEEL_GEOM, MAT.tyre); m.castShadow = true;
-    if (w.front) { const piv = new THREE.Group(); piv.position.set(w.f, TYRE_R, w.r); piv.add(m); grp.add(piv); if (learner) m.layers.set(1); front.push({ piv, r: w.r }); }
-    else { m.position.set(w.f, TYRE_R, w.r); add(m, 1); }
+    const s = Math.sign(w.r), wr = s * (W / 2 - TYRE_W / 2 + 0.01);
+    const wheel = new THREE.Group();
+    const tyre = new THREE.Mesh(WHEEL_GEOM, MAT.tyre); tyre.castShadow = true;
+    const rim = new THREE.Mesh(RIM_GEOM, MAT.rim); rim.position.z = s * (TYRE_W / 2 - 0.01);
+    const hub = new THREE.Mesh(HUB_GEOM, MAT.black); hub.position.z = s * (TYRE_W / 2 + 0.002);
+    wheel.add(tyre, rim, hub);
+    if (learner) wheel.traverse(c => c.layers.set(1));
+    if (w.front) { const piv = new THREE.Group(); piv.position.set(w.f, TYRE_R, wr); piv.add(wheel); grp.add(piv); front.push({ piv, r: w.r }); }
+    else { wheel.position.set(w.f, TYRE_R, wr); grp.add(wheel); }
+    const arch = new THREE.Mesh(ARCH_GEOM, MAT.arch); arch.position.set(w.f, TYRE_R, s * (W / 2 + 0.003)); if (s < 0) arch.rotation.y = Math.PI;
+    add(arch);
   }
   const mw = g.mirrorWidth / 2 - (W / 2 - 0.04);
   for (const s of [-1, 1]) {
