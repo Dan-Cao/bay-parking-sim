@@ -1324,7 +1324,7 @@ function updateTopCam() {
   topCam.position.set(cx, 80, cz); topCam.lookAt(cx, 0, cz); topCam.updateProjectionMatrix();
 }
 // Third-person chase view: behind and above the car, swinging round smoothly as it turns.
-// Click to capture the mouse and orbit; when the mouse rests while the car drives, the view eases back behind it.
+// Click to capture the mouse and orbit; when the mouse rests while reversing, the view eases back behind the car.
 const chaseRay = new THREE.Raycaster();
 let chaseLift = 0.2;
 let orbitYaw = 0, orbitPitch = 0, orbitIdle = 0, chaseLast = null;
@@ -1334,7 +1334,7 @@ function updateChaseCam(dt) {
   chaseYaw += wrapPi(p.h - chaseYaw) * (1 - Math.exp(-dt * 3));
   const moving = chaseLast && Math.hypot(p.x - chaseLast[0], p.z - chaseLast[1]) > 1e-4; chaseLast = [p.x, p.z];
   orbitIdle += dt;
-  if (moving && orbitIdle > 1.5) { const k = 1 - Math.exp(-dt * 1.5); orbitYaw -= orbitYaw * k; orbitPitch -= orbitPitch * k; if (Math.abs(orbitYaw) + Math.abs(orbitPitch) < 0.01) orbitYaw = orbitPitch = 0; }
+  if (moving && lastMoveDir < 0 && orbitIdle > 1.5) { const k = 1 - Math.exp(-dt * 1.5); orbitYaw -= orbitYaw * k; orbitPitch -= orbitPitch * k; if (Math.abs(orbitYaw) + Math.abs(orbitPitch) < 0.01) orbitYaw = orbitPitch = 0; }
   const c = Math.cos(chaseYaw), s = Math.sin(chaseYaw), tx = p.x + c, tz = p.z + s;
   const r = 7.6 * zoomChase, a = chaseYaw + orbitYaw, target = new THREE.Vector3(tx, 0.9, tz), dir = new THREE.Vector3();
   // when a parked car, pillar or wall is in the way, lift the camera over it; failing that, pull in
