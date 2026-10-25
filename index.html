@@ -237,7 +237,7 @@ const SPEED = 7.5 / 3.6;           // m/s, constant parking speed
 const STEER_RATE = 1.5;            // steering-wheel turns per second
 const LINE_W = 0.10, HALF_LINE = LINE_W / 2;
 const TYRE_R = 0.31, TYRE_W = 0.20;
-const STOP_CHECK_TIME = 1.5;
+const STOP_CHECK_TIME = 3;
 const EXIT_RADIUS = 1.2;
 const DOOR_MIN = 0.60;
 const ANGLE_TOL = 5;               // degrees
@@ -1119,7 +1119,7 @@ function showResult(r) {
   if (r.kind === 'park') html += `<h2 class="${r.pass ? 'pass' : 'fail'}">${r.pass ? 'Parked — pass' : 'Parked — not quite'}</h2>`;
   else html += `<h2 class="${r.pass ? 'pass' : 'fail'}">${r.pass ? 'Exit — pass' : 'Exit — contact made'}</h2>`;
   for (const c of r.checks) html += `<div class="row ${c.status}"><span class="icon">${ICON[c.status]}</span><span>${c.label}</span><span class="val">${c.value}</span></div>`;
-  html += `<div class="foot">Drive on to try again${r.kind === 'park' ? ' or pull out to practise exiting' : ''}.</div>`;
+  html += `<div class="foot">${r.kind === 'park' ? 'Adjust and stop again to re-check, or pull out to practise exiting' : 'Drive on to try again'}.</div>`;
   resultEl.innerHTML = html; resultEl.style.display = 'block';
   drawHighlights(r);
 }
@@ -1222,7 +1222,12 @@ function updateDrive(dt) {
         attempt.blocked = true; break;
       }
       attempt.blocked = false;
-      if (!moved && resultShown) newAttempt();   // driving on after a result starts a fresh attempt
+      if (!moved && resultShown) {   // driving on after a result starts a fresh attempt
+        const wasPark = lastResult && lastResult.kind === 'park', prev = attempt;
+        newAttempt();
+        // adjusting after a park result: keep its contacts and judge again on the next stop
+        if (wasPark) Object.assign(attempt, { retry: true, contacts: prev.contacts, contactPts: prev.contactPts });
+      }
       Object.assign(state.learner, next); remaining -= step; moved = true;
     }
   }
@@ -1234,7 +1239,7 @@ function updateDrive(dt) {
       { label: 'Reached the exit marker', status: 'pass', value: '' },
       { label: 'No contact', status: attempt.contacts ? 'fail' : 'pass', value: attempt.contacts ? `${attempt.contacts} contact${attempt.contacts > 1 ? 's' : ''}` : 'none' }] });
   }
-  if (!resultShown && attempt.moved && stopTimer >= STOP_CHECK_TIME && (!attempt.exit || attempt.exit.left)) {
+  if (!resultShown && attempt.moved && stopTimer >= STOP_CHECK_TIME && (!attempt.exit || attempt.exit.left || attempt.retry)) {
     const r = evaluatePark(state.learner, attempt.contacts);
     if (r) showResult(r);
   }

@@ -156,7 +156,7 @@ Entering edit mode (`E`) pauses driving and switches to top-down.
 ## 8. Park checker
 
 ### 8.1 Trigger
-Automatic: the car has been **stopped for ~1.5 s** while **substantially overlapping a bay**. The judged bay is auto-detected as the most-overlapped bay. Brief mid-maneuver pauses outside a bay don't trigger it.
+Automatic: the car has been **stopped for ~3 s** while **substantially overlapping a bay**. The judged bay is auto-detected as the most-overlapped bay. Brief mid-maneuver pauses outside a bay don't trigger it. After a result, moving the car hides it; adjusting within the bay and stopping again re-checks it (contacts from the attempt are kept).
 
 ### 8.2 Checks
 
