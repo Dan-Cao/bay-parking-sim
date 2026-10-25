@@ -47,7 +47,7 @@ In Manual/Automatic, W = accelerate in the selected gear's direction, S = brake.
 
 ### 2.4 Driving feel
 - Car moves **only while W is held**. Release = stop.
-- Speed: **~5 km/h, constant**, same forward and reverse.
+- Speed: **~7.5 km/h, constant**, same forward and reverse.
 - Steering: A/D turn the wheel gradually. Two modes, toggled in settings:
   - **Holds position** (wheel stays where you leave it)
   - **Self-centering**
@@ -184,7 +184,7 @@ The same checks apply to forward, reverse and angled parks, however she got ther
 - [ ] At full lock the MiTo's path matches its real turning circle within **±5%**.
 - [ ] The steering widget's lock-to-lock turns match the real car, so "one turn left" means the same in sim and real life.
 - [ ] Rear wheels visibly cut in relative to the fronts.
-- [ ] Constant ~5 km/h while W is held, and the car stops immediately on release.
+- [ ] Constant ~7.5 km/h while W is held, and the car stops immediately on release.
 - [ ] Wrong gear moves the car in the gear's direction, and the gear display makes it obvious why.
 
 ### Views
