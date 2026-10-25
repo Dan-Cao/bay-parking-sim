@@ -1,12 +1,16 @@
 # Bay Parking Simulator
 
+**▶ Try it: https://dan-cao.github.io/bay-parking-sim/**
+
 A browser-based 3D trainer for learning to bay park, built for instructor-led practice on one keyboard. The learner drives with WASD; the instructor can pause at any time, drag cars around to set up a situation, and hand the keyboard back.
 
 The car pivots about its rear axle with a realistic turning circle, so reference points, the rear wheels cutting in and the gap you need to swing out all behave like the real thing. When the car stops in a bay, a park checker judges it, the way an instructor would.
 
 ## Running it
 
-It's a single file with no build step.
+The easiest way is the [published page](https://dan-cao.github.io/bay-parking-sim/): nothing to install, just open it in Chrome, Edge or Firefox.
+
+To run it locally, note that it's a single file with no build step.
 
 1. Download or clone this folder.
 2. Open `index.html` in Chrome, Edge or Firefox.
