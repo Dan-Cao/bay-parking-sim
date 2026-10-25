@@ -214,7 +214,8 @@
         <label>Rear axle <input type="checkbox" data-marker="axle"></label>
         <label>Bumper corners <input type="checkbox" data-marker="bumpers"></label>
         <h3>Display &amp; sound</h3>
-        <label>Mirror / camera strip <kbd>M</kbd> <input type="checkbox" id="stInsets"></label>
+        <label>Mirror strip in top-down <kbd>M</kbd> <input type="checkbox" id="stInsetsTop"></label>
+        <label>Mirror strip in driver’s seat <kbd>M</kbd> <input type="checkbox" id="stInsetsFp"></label>
         <label>Parking sensor &amp; contact sounds <input type="checkbox" id="stSound"></label>
         <label>UI size <input type="range" id="stScale" min="0.7" max="1.8" step="0.05"></label>
       </div>
@@ -299,7 +300,7 @@ const MARKER_COLORS = { mirrors: 0x4cc3ff, shoulder: 0xff5bd1, axle: 0xffa630, b
 const DEFAULT_SETTINGS = {
   car: 'mito', custom: { ...LEARNER_PRESETS.mito }, trans: 'arcade', steering: 'hold',
   markers: { mirrors: false, shoulder: false, axle: false, bumpers: false },
-  sound: true, insets: true, uiScale: 1,
+  sound: true, insetsTop: false, insetsFp: true, uiScale: 1,
 };
 function loadSettings() {
   try {
@@ -1184,7 +1185,7 @@ function updateLearnerVisuals(delta) {
 const stripEl = document.getElementById('strip');
 stripEl.innerHTML = `<div class="frame" id="frLeft"><span>Left mirror</span></div><div class="frame" id="frCam"><span>Rear camera</span></div><div class="frame" id="frRight"><span>Right mirror</span></div>`;
 let stripRect = null;
-function stripVisible() { return settings.insets && !editing && camMode !== 'fp'; }
+function stripVisible() { return !editing && (camMode === 'fp' ? settings.insetsFp : settings.insetsTop); }
 function layoutStrip() {
   const W = innerWidth, H = innerHeight;
   const h = Math.round(Math.min(H * 0.2, W * 0.12)), wm = Math.round(h * 4 / 3), wc = Math.round(h * 16 / 9), gap = 10, top = 10;
@@ -1450,7 +1451,7 @@ addEventListener('keydown', ev => {
   switch (ev.code) {
     case 'KeyE': setEditing(!editing); break;
     case 'KeyH': document.getElementById('help').classList.toggle('collapsed'); break;
-    case 'KeyM': settings.insets = !settings.insets; saveSettings(); layoutStrip(); break;
+    case 'KeyM': if (camMode === 'fp' && !editing) settings.insetsFp = !settings.insetsFp; else settings.insetsTop = !settings.insetsTop; saveSettings(); layoutStrip(); break;
     case 'Equal': case 'NumpadAdd': zoomBy(1 / 1.1); break;
     case 'Minus': case 'NumpadSubtract': zoomBy(1.1); break;
   }
@@ -1493,7 +1494,7 @@ function syncSettingsForm() {
   document.querySelectorAll('[data-spec]').forEach(el => el.value = spec[el.dataset.spec]);
   document.getElementById('stTrans').value = settings.trans; document.getElementById('stSteer').value = settings.steering;
   document.querySelectorAll('[data-marker]').forEach(el => el.checked = settings.markers[el.dataset.marker]);
-  document.getElementById('stInsets').checked = settings.insets; document.getElementById('stSound').checked = settings.sound;
+  document.getElementById('stInsetsTop').checked = settings.insetsTop; document.getElementById('stInsetsFp').checked = settings.insetsFp; document.getElementById('stSound').checked = settings.sound;
   document.getElementById('stScale').value = settings.uiScale;
 }
 function applyCar() { LG = deriveCar(learnerSpec()); buildLearner(); steer = clamp(steer, -LG.halfTurns, LG.halfTurns); renderHelp(); if (testMode) runTests(); }
@@ -1506,7 +1507,8 @@ document.querySelectorAll('[data-spec]').forEach(el => el.onchange = () => {
 document.getElementById('stTrans').onchange = e => { settings.trans = e.target.value; gear = 'F'; saveSettings(); renderHelp(); };
 document.getElementById('stSteer').onchange = e => { settings.steering = e.target.value; saveSettings(); };
 document.querySelectorAll('[data-marker]').forEach(el => el.onchange = () => { settings.markers[el.dataset.marker] = el.checked; saveSettings(); });
-document.getElementById('stInsets').onchange = e => { settings.insets = e.target.checked; saveSettings(); layoutStrip(); };
+document.getElementById('stInsetsTop').onchange = e => { settings.insetsTop = e.target.checked; saveSettings(); layoutStrip(); };
+document.getElementById('stInsetsFp').onchange = e => { settings.insetsFp = e.target.checked; saveSettings(); layoutStrip(); };
 document.getElementById('stSound').onchange = e => { settings.sound = e.target.checked; saveSettings(); };
 document.getElementById('stScale').oninput = e => { settings.uiScale = +e.target.value; document.documentElement.style.setProperty('--ui-scale', settings.uiScale); saveSettings(); layoutStrip(); };
 document.documentElement.style.setProperty('--ui-scale', settings.uiScale);
@@ -1617,7 +1619,7 @@ function frame(now) {
   const fp = camMode === 'fp' && !editing, strip = stripVisible();
   if (strip || fp) {
     updateMirrorCams();
-    const list = fp ? ['left', 'right', 'rv'] : ['left', 'cam', 'right'];
+    const list = fp ? (strip ? ['left', 'cam', 'right', 'rv'] : ['left', 'right', 'rv']) : ['left', 'cam', 'right'];
     for (const k of list) { renderer.setRenderTarget(rts[k]); renderer.render(scene, mirrorCams[k]); }
     renderer.setRenderTarget(null);
   }

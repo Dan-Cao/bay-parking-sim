@@ -86,6 +86,7 @@ Keys must not get "stuck" when the window loses focus: on blur, all keys are rel
 
 ### 4.2 Insets (strip along the top)
 `[ Left mirror | Rear camera | Right mirror ]`, rendered as real 3D mirror/camera views.
+Shown by default in the driver's seat view (the 3D mirrors are too small to read); hidden by default in top-down. `M` toggles it for the current view.
 
 ### 4.3 First person (v1, basic)
 - Right-hand driver's seat at realistic eye height (~1.1 m).
