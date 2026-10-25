@@ -65,7 +65,7 @@ In Manual/Automatic, W = accelerate in the selected gear's direction, S = brake.
 | Space | Brake |
 | R | Toggle gear (1↔R or D↔R) |
 | C | Centre steering |
-| V | Cycle camera: top-down fixed → top-down follow → first person |
+| V | Cycle camera: top-down → chase cam (third-person, behind the car) → first person |
 | + / − (and scroll) | Zoom (top-down) |
 | E | Toggle Edit mode (pauses driving, forces top-down) |
 | P | Place learner's car (in edit mode) |
@@ -80,7 +80,7 @@ Keys must not get "stuck" when the window loses focus: on blur, all keys are rel
 ## 4. Views
 
 ### 4.1 Top-down
-- Two modes: **fixed** (whole car-park section) and **follow** (centred on car). Zoom in both.
+- **Top-down fixed** (whole car-park section) plus a **chase cam**: a third-person view behind and above the car that swings round smoothly as it turns (like Forza/GTA). Zoom works in both.
 - Semi-realistic look: tarmac texture, painted lines, shadows, car models with visible headlights/tail-lights and windscreen so the facing direction is obvious.
 - Front wheels visibly turn to their real angle.
 

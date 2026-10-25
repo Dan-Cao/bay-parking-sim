@@ -496,9 +496,10 @@ let steer = 0;              // steering-wheel turns, + = right
 let gear = 'F';             // 'F' (1st / D) or 'R'
 let arcadeDir = 1;
 let editing = false;
-let camMode = 'top-fixed';  // top-fixed | top-follow | fp
+let camMode = 'top-fixed';  // top-fixed | chase | fp
 let camBeforeEdit = 'top-fixed';
-let zoomFixed = 1, zoomFollow = 1;
+let zoomFixed = 1, zoomChase = 1;
+let chaseYaw = null;         // smoothed heading the chase camera trails behind
 let yaw = 0, pitch = -0.08;
 const keys = {};
 let attempt = null;
@@ -533,6 +534,8 @@ const topCam = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
 topCam.up.set(0, 0, -1);
 [0, 1, 3, 4].forEach(l => topCam.layers.enable(l));
 const fpCam = new THREE.PerspectiveCamera(72, 1, 0.05, 300);
+const chaseCam = new THREE.PerspectiveCamera(60, 1, 0.1, 400);
+[1, 3].forEach(l => chaseCam.layers.enable(l));
 fpCam.rotation.order = 'YXZ';
 fpCam.layers.disableAll(); [0, 2, 3].forEach(l => fpCam.layers.enable(l));
 
@@ -1298,18 +1301,23 @@ function updateTopCam() {
   const botPx = editing ? 0 : H - document.getElementById('hudBottom').getBoundingClientRect().top + 6;
   const avail = Math.max(0.3, (H - topPx - botPx) / H);
   let cx, cz, halfH;
-  if (camMode === 'top-follow' && !editing) { cx = state.learner.x; cz = state.learner.z; halfH = 8 * zoomFollow; }
-  else {
-    const e = areaExtents(); cx = (e.x0 + e.x1) / 2; cz = (e.z0 + e.z1) / 2;
-    halfH = Math.max((e.z1 - e.z0) / 2, (e.x1 - e.x0) / 2 * avail / asp) * zoomFixed;
-    if (editing) { const panel = document.getElementById('editPanel').getBoundingClientRect().right / W; halfH /= (1 - panel); cx -= (halfH * 2 * asp) * panel / 2; }
-  }
+  const e = areaExtents(); cx = (e.x0 + e.x1) / 2; cz = (e.z0 + e.z1) / 2;
+  halfH = Math.max((e.z1 - e.z0) / 2, (e.x1 - e.x0) / 2 * avail / asp) * zoomFixed;
+  if (editing) { const panel = document.getElementById('editPanel').getBoundingClientRect().right / W; halfH /= (1 - panel); cx -= (halfH * 2 * asp) * panel / 2; }
   const Ht = 2 * halfH / avail, Wt = Ht * asp, bottom = -halfH - Ht * botPx / H;
   Object.assign(topCam, { left: -Wt / 2, right: Wt / 2, bottom, top: bottom + Ht });
-  // follow view turns with the car so it always points up the screen; fixed view keeps north up
-  const follow = camMode === 'top-follow' && !editing, h = state.learner.h;
-  if (follow) topCam.up.set(Math.cos(h), 0, Math.sin(h)); else topCam.up.set(0, 0, -1);
   topCam.position.set(cx, 80, cz); topCam.lookAt(cx, 0, cz); topCam.updateProjectionMatrix();
+}
+// Third-person chase view: behind and above the car, swinging round smoothly as it turns.
+function updateChaseCam(dt) {
+  const p = state.learner;
+  if (chaseYaw === null) chaseYaw = p.h;
+  chaseYaw += wrapPi(p.h - chaseYaw) * (1 - Math.exp(-dt * 3));
+  const dist = 6.5 * zoomChase, height = 2.4 * Math.sqrt(zoomChase);
+  const c = Math.cos(chaseYaw), s = Math.sin(chaseYaw);
+  chaseCam.position.set(p.x - c * dist, height, p.z - s * dist);
+  chaseCam.up.set(0, 1, 0); chaseCam.lookAt(p.x + c * 2, 0.9, p.z + s * 2);
+  chaseCam.aspect = innerWidth / innerHeight; chaseCam.updateProjectionMatrix();
 }
 function updateFpCam() {
   const p = state.learner, e = toWorld(p, LG.eyeF, LG.eyeR);
@@ -1351,12 +1359,12 @@ function updateHud() {
   const html = main + sub; if (steerText._h !== html) { steerText.innerHTML = html; steerText._h = html; }
   document.getElementById('modeText').textContent = editing ? 'EDIT' : 'DRIVE';
   document.getElementById('modeText').classList.toggle('edit', editing);
-  document.getElementById('camText').textContent = editing ? 'Top-down' : { 'top-fixed': 'Top-down · fixed', 'top-follow': 'Top-down · follow', fp: 'Driver’s seat' }[camMode];
+  document.getElementById('camText').textContent = editing ? 'Top-down' : { 'top-fixed': 'Top-down', chase: 'Chase cam', fp: 'Driver’s seat' }[camMode];
   document.getElementById('fpHint').style.display = camMode === 'fp' && !editing && document.pointerLockElement !== canvas ? 'block' : 'none';
 }
 const HELP = [
   ['W', 'Accelerate (in the selected gear)'], ['S / Space', 'Brake'], ['A / D', 'Turn the wheel left / right'], ['R', 'Change gear (1 ↔ R)'],
-  ['C', 'Centre the wheel'], ['V', 'Camera: fixed → follow → driver’s seat'], ['+ / − / wheel', 'Zoom (top-down)'], ['M', 'Mirror / camera strip'],
+  ['C', 'Centre the wheel'], ['V', 'Camera: top-down → chase → driver’s seat'], ['+ / − / wheel', 'Zoom'], ['M', 'Mirror / camera strip'],
   ['E', 'Edit mode'], ['Esc', 'Settings'], ['H', 'Hide this help'],
 ];
 function renderHelp() {
@@ -1370,7 +1378,8 @@ document.getElementById('helpHead').onclick = () => document.getElementById('hel
 // ===================================================================
 function cycleCamera() {
   if (editing) return;
-  camMode = { 'top-fixed': 'top-follow', 'top-follow': 'fp', fp: 'top-fixed' }[camMode];
+  camMode = { 'top-fixed': 'chase', chase: 'fp', fp: 'top-fixed' }[camMode];
+  chaseYaw = null;
   if (camMode !== 'fp' && document.pointerLockElement) document.exitPointerLock();
   layoutStrip();
 }
@@ -1503,7 +1512,7 @@ canvas.addEventListener('wheel', ev => {
   if (camMode === 'fp' && !editing) return;
   zoomBy(ev.deltaY > 0 ? 1.1 : 1 / 1.1);
 }, { passive: false });
-function zoomBy(f) { if (camMode === 'top-follow' && !editing) zoomFollow = clamp(zoomFollow * f, 0.3, 4); else zoomFixed = clamp(zoomFixed * f, 0.25, 3); }
+function zoomBy(f) { if (camMode === 'chase' && !editing) zoomChase = clamp(zoomChase * f, 0.4, 3); else zoomFixed = clamp(zoomFixed * f, 0.25, 3); }
 
 editPanel.querySelectorAll('[data-add]').forEach(b => b.onclick = () => addItem(b.dataset.add));
 document.getElementById('btnDelete').onclick = deleteSelected;
@@ -1719,6 +1728,7 @@ function frame(now) {
   }
   renderer.autoClear = true;
   if (fp) { updateFpCam(); renderer.render(scene, fpCam); }
+  else if (camMode === 'chase' && !editing) { updateChaseCam(dt); renderer.render(scene, chaseCam); }
   else { updateTopCam(); renderer.render(scene, topCam); }
   if (strip) { renderer.autoClear = false; renderer.clearDepth(); renderer.render(stripScene, stripCam); renderer.autoClear = true; }
 }
