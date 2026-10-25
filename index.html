@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bay Parking Simulator</title>
 <link rel="stylesheet" href="style.css">
 <script type="importmap">
@@ -36,6 +36,22 @@
   </div>
 </div>
 
+<div id="touchSteer" class="touch-cluster">
+  <div class="tools">
+    <button data-act="view">View</button><button data-act="look">Reset view</button><button data-act="mirrors">Mirrors</button>
+  </div>
+  <div class="row">
+    <button class="pad" data-hold="KeyA" aria-label="Steer left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M14 3 L4 10 L14 17 Z"/></svg></button>
+    <button class="pad centre" data-act="centre">Centre</button>
+    <button class="pad" data-hold="KeyD" aria-label="Steer right"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3 L16 10 L6 17 Z"/></svg></button>
+  </div>
+</div>
+<div id="touchPedals" class="touch-cluster">
+  <button class="pad gear" data-act="gear">Gear<span id="tGearSub">1 ↔ R</span></button>
+  <button class="pad" data-hold="KeyW"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 14 L10 4 L17 14 Z"/></svg><span id="tFwdLabel">Forward</span></button>
+  <button class="pad" data-hold="KeyS" id="tReverse"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6 L10 16 L17 6 Z"/></svg><span>Reverse</span></button>
+</div>
+
 <div id="help" class="panel">
   <div class="head" id="helpHead"><span>Controls</span><span><kbd>H</kbd></span></div>
   <div class="body" id="helpBody"></div>
@@ -53,6 +69,8 @@
   </div>
   <h3>Selected</h3>
   <div class="btns"><button id="btnDelete">Delete <kbd>Del</kbd></button><button id="btnRotL">⟲ <kbd>[</kbd></button><button id="btnRotR">⟳ <kbd>]</kbd></button></div>
+  <div class="btns touch-only"><button id="btnSnapL">Snap ⟲</button><button id="btnSnapR">Snap ⟳</button></div>
+  <label class="touch-only">Snap dropped cars into bays <input type="checkbox" id="edSnap" checked></label>
   <h3>Layout</h3>
   <label>Rows <select id="lyRows"><option value="1">1</option><option value="2">2 (facing)</option></select></label>
   <label>Bays per row <span id="lyBaysV"></span><input type="range" id="lyBays" min="3" max="14" step="1"></label>
@@ -69,7 +87,15 @@
     <button id="btnReload">Reload preset</button>
   </div>
   <h3>Tips</h3>
-  <div class="tips">
+  <div class="tips touch-only">
+    Drag cars, objects, your car or the EXIT marker.<br>
+    Dropped cars snap into bays; untick <b>Snap dropped cars</b> to place them freely.<br>
+    ⟲ ⟳ rotate the selected item; <b>Snap</b> lines it up with the bays.<br>
+    Pinch to zoom.<br>
+    <b>Reset</b> goes back to how things were when you last left edit mode.<br>
+    Tap <b>Edit</b> to go back to driving.
+  </div>
+  <div class="tips no-touch">
     Drag cars, objects, your car or the EXIT marker.<br>
     Dropped cars snap into bays; hold <kbd>Alt</kbd> while dropping to place freely.<br>
     <kbd>[</kbd> <kbd>]</kbd> or mouse wheel while dragging rotates; hold <kbd>Shift</kbd> to snap to the bay angle.<br>
