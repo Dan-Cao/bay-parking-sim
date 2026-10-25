@@ -587,6 +587,7 @@ const MAT = {
   headliner: new THREE.MeshStandardMaterial({ color: 0x9a9a9c, roughness: 0.95 }),
   door: new THREE.MeshStandardMaterial({ color: 0x41444a, roughness: 0.9 }),
   seat: new THREE.MeshStandardMaterial({ color: 0x55585e, roughness: 1 }),
+  carpet: new THREE.MeshStandardMaterial({ color: 0x2c2d30, roughness: 1 }),
   metal: new THREE.MeshStandardMaterial({ color: 0xb4b9be, roughness: 0.3, metalness: 0.8 }),
 };
 const paintCache = new Map();
@@ -796,6 +797,12 @@ function makeInterior(g, color) {
   beam([e + 0.32, 0.48, 0], [e + 0.28, 0.66, 0], 0.025, 0.025, MAT.metal);
   const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), MAT.black); knob.position.set(e + 0.28, 0.68, 0); grp.add(knob);
   beam([e - 0.05, 0.5, 0], [e + 0.15, 0.56, 0], 0.035, 0.03, MAT.black);
+
+  // Carpeted floor, front bulkhead behind the footwells, raised sills and pedals.
+  box(-L / 2 + 0.2, ws + 0.05, 0.22, 0.26, -W / 2 + 0.04, W / 2 - 0.04, MAT.carpet);
+  box(ws, ws + 0.05, 0.26, belt - 0.32, -W / 2 + 0.08, W / 2 - 0.08, MAT.carpet);
+  for (const s of [-1, 1]) box(-L / 2 + 0.3, ws, 0.26, 0.34, s * (W / 2 - 0.1), s * (W / 2 - 0.02), MAT.door);
+  for (const [r, w] of [[dr - 0.16, 0.08], [dr - 0.02, 0.09], [dr + 0.12, 0.07]]) beam([ws - 0.12, 0.3, r], [ws - 0.08, 0.42, r], w, 0.02, MAT.metal);
 
   // Seats: driver, passenger and rear bench.
   const seat = (fBack, r, wide) => {
@@ -1732,7 +1739,7 @@ if (testMode) {
 }
 requestAnimationFrame(frame);
 // debugging hook for scripted checks from the console
-window.__sim = { get state() { return state; }, get LG() { return LG; }, evaluatePark, learnerHits, keys, tick: dt => updateDrive(dt), setSteer: s => { steer = s; }, setGear: g => { gear = g; }, get attempt() { return attempt; }, get lastResult() { return lastResult; } };
+window.__sim = { get state() { return state; }, get LG() { return LG; }, evaluatePark, learnerHits, keys, tick: dt => updateDrive(dt), setSteer: s => { steer = s; }, setGear: g => { gear = g; }, setLook: (y, p) => { yaw = y; pitch = p; }, get attempt() { return attempt; }, get lastResult() { return lastResult; } };
 </script>
 </body>
 </html>
