@@ -81,7 +81,7 @@ Keys must not get "stuck" when the window loses focus: on blur, all keys are rel
 ## 4. Views
 
 ### 4.1 Top-down
-- **Top-down fixed** (whole car-park section) plus a **chase cam**: a third-person view behind and above the car that swings round smoothly as it turns (like Forza/GTA). Zoom works in both. In the chase cam, click to capture the mouse and move it to orbit round the car (Esc releases it) (it lifts over parked cars rather than clipping into them); the view stays where it is put when driving forwards; when the mouse is left still while reversing, it eases back behind the car. X resets the view.
+- **Top-down fixed** (whole car-park section) plus a **chase cam**: a third-person view behind and above the car that swings round smoothly as it turns (like Forza/GTA). Zoom works in both. In the chase cam, click to capture the mouse and move it to orbit round the car (Esc releases it) (it lifts over parked cars rather than clipping into them); the view stays where it is put (it never resets on its own). X resets the view.
 - Semi-realistic look: tarmac texture, painted lines, shadows, car models with visible headlights/tail-lights and windscreen so the facing direction is obvious.
 - Front wheels visibly turn to their real angle.
 
