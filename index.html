@@ -297,17 +297,17 @@ const MARKER_COLORS = { mirrors: 0x4cc3ff, shoulder: 0xff5bd1, axle: 0xffa630, b
 // ===================================================================
 const DEFAULT_SETTINGS = {
   car: 'mito', custom: { ...LEARNER_PRESETS.mito }, trans: 'arcade', steering: 'hold',
-  markers: { mirrors: true, shoulder: true, axle: true, bumpers: true },
+  markers: { mirrors: false, shoulder: false, axle: false, bumpers: false },
   sound: true, insets: true, uiScale: 1,
 };
 function loadSettings() {
   try {
-    const s = JSON.parse(localStorage.getItem('bayparkSettings') || 'null');
+    const s = JSON.parse(localStorage.getItem('bayparkSettings2') || 'null');
     if (s) return { ...DEFAULT_SETTINGS, ...s, markers: { ...DEFAULT_SETTINGS.markers, ...s.markers }, custom: { ...DEFAULT_SETTINGS.custom, ...s.custom } };
   } catch (e) { /* storage unavailable */ }
   return structuredClone(DEFAULT_SETTINGS);
 }
-function saveSettings() { try { localStorage.setItem('bayparkSettings', JSON.stringify(settings)); } catch (e) { /* ignore */ } }
+function saveSettings() { try { localStorage.setItem('bayparkSettings2', JSON.stringify(settings)); } catch (e) { /* ignore */ } }
 let settings = loadSettings();
 const learnerSpec = () => settings.car === 'custom' ? settings.custom : LEARNER_PRESETS[settings.car];
 

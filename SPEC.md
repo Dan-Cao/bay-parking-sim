@@ -99,7 +99,7 @@ Keys must not get "stuck" when the window loses focus: on blur, all keys are rel
 - **Mode indicator**: DRIVE / EDIT
 - **Key help**: small, collapsible
 
-### 4.5 Reference markers (on by default, toggleable individually)
+### 4.5 Reference markers (off by default, each can be turned on in Settings)
 Car-relative dots that grow and turn yellow when lined up with a bay line (no guide lines drawn):
 - Side mirrors
 - Driver's shoulder / B-pillar
