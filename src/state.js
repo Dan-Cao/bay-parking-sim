@@ -23,6 +23,8 @@ export const S = {
   chaseYaw: null,        // smoothed heading the chase camera trails behind
   orbitYaw: 0, orbitPitch: 0,   // chase-cam mouse look
   yaw: 0, pitch: -0.08,  // driver's-seat mouse look
+  touch: false,          // on-screen touch controls in place of the keyboard help
+  touchLooked: false,    // hides the drag-to-look hint once it has been used
   attempt: null,
   resultShown: false,
   stopTimer: 0,

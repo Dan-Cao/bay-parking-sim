@@ -26,9 +26,13 @@ export function updateHud() {
   document.getElementById('modeText').classList.toggle('edit', S.editing);
   document.getElementById('camText').textContent = S.editing ? 'Top-down' : { 'top-fixed': 'Top-down', chase: 'Chase cam', fp: 'Driver’s seat' }[S.camMode];
   const fpHint = document.getElementById('fpHint');
-  const hint = S.editing ? '' : (S.camMode === 'fp' || S.camMode === 'chase') && document.pointerLockElement !== canvas ? S.camMode : '';
+  const look = S.camMode === 'fp' || S.camMode === 'chase';
+  const hint = S.editing || !look ? '' : S.touch ? (S.touchLooked ? '' : 'touch') : document.pointerLockElement !== canvas ? S.camMode : '';
   fpHint.style.display = hint ? 'block' : 'none';
-  if (hint && fpHint._h !== hint) { fpHint.innerHTML = hint === 'fp' ? 'Click to look around · <kbd>Esc</kbd> releases mouse · <kbd>X</kbd> face forward' : 'Click to look around · <kbd>Esc</kbd> releases mouse · <kbd>X</kbd> back behind the car'; fpHint._h = hint; }
+  if (hint && fpHint._h !== hint) {
+    fpHint.innerHTML = { fp: 'Click to look around · <kbd>Esc</kbd> releases mouse · <kbd>X</kbd> face forward', chase: 'Click to look around · <kbd>Esc</kbd> releases mouse · <kbd>X</kbd> back behind the car', touch: 'Drag to look around · <b>Reset view</b> puts it back' }[hint];
+    fpHint._h = hint;
+  }
 }
 export const HELP = [
   ['W', 'Accelerate (in the selected gear)'], ['S / Space', 'Brake'], ['A / D', 'Turn the wheel left / right'], ['R', 'Change gear (1 ↔ R)'],

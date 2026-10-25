@@ -10,6 +10,7 @@ import { renderHelp, updateHud } from './hud.js';
 import { anyModalOpen } from './input.js';
 import { openModal } from './modals.js';
 import { startTests } from './tests.js';
+import { initTouch, updateTouch } from './touch.js';
 
 // ===================================================================
 // Main loop
@@ -24,7 +25,7 @@ function frame(now) {
   updateSensor(reverseEngaged() && !anyModalOpen(), now / 1000);
   updateLearnerVisuals(delta);
   for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.t += dt; f.m.material.opacity = Math.max(0, 1 - f.t); f.m.scale.setScalar(1 + f.t * 1.5); if (f.t > 1) { scene.remove(f.m); disposeTree(f.m); flashes.splice(i, 1); } }
-  updateHud();
+  updateHud(); updateTouch();
 
   renderer.shadowMap.needsUpdate = true;
   const fp = S.camMode === 'fp' && !S.editing, strip = stripVisible();
@@ -46,6 +47,7 @@ function frame(now) {
 // ===================================================================
 buildLearner();
 renderHelp();
+initTouch();
 resize();
 if (testMode) startTests();
 else {

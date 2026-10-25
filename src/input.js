@@ -1,4 +1,4 @@
-// Edit mode, mouse (look around, drag cars) and keyboard input.
+// Edit mode, mouse and touch (look around, drag cars) and keyboard input.
 import * as THREE from 'three';
 import { EXIT_RADIUS, PALETTE, PARKED_TYPES, saveSettings, settings } from './config.js';
 import { PG, carShapes, clamp, clone, objectPoly, pointInPoly, poseInBay, rad, wrapPi } from './geometry.js';
@@ -107,15 +107,44 @@ export function addItem(kind) {
   rebuildStatic(); select(refind(it));
 }
 
+// Touch: one finger drags cars in edit mode or looks around in the chase and driver's-seat
+// views (dragging the scene, like a map); two fingers pinch to zoom.
+export const touchPts = new Map();
+export let snapDrop = true;   // touch has no Alt key, so the edit panel has a toggle instead
+const pinchDist = () => { const [a, b] = [...touchPts.values()]; return Math.hypot(a[0] - b[0], a[1] - b[1]); };
+function endDrag(free) {
+  if (!drag) return;
+  if (!drag.moved) S.undoStack.pop();
+  else { if (!free) snapItem(drag.it); else if (drag.it.kind === 'car') drag.it.ref.bay = null; commitEdit(); }
+  drag = null;
+}
 canvas.addEventListener('pointerdown', ev => {
   initAudio(); canvas.focus();
-  if ((S.camMode === 'fp' || S.camMode === 'chase') && !S.editing) { canvas.requestPointerLock()?.catch?.(() => {}); return; }
+  if (ev.pointerType === 'touch') {
+    touchPts.set(ev.pointerId, [ev.clientX, ev.clientY]); canvas.setPointerCapture(ev.pointerId);
+    if (touchPts.size > 1) { endDrag(!snapDrop); return; }   // a second finger turns a drag into a pinch
+    if (!S.editing) return;
+  } else if ((S.camMode === 'fp' || S.camMode === 'chase') && !S.editing) { canvas.requestPointerLock()?.catch?.(() => {}); return; }
   if (!S.editing || ev.button !== 0) return;
   const w = screenToWorld(ev); mouseWorld = w;
   const it = pick(w); select(it);
   if (it) { const p = itemPose(it); pushUndo(); drag = { it, off: [p.x - w[0], p.z - w[1]], moved: false }; canvas.setPointerCapture(ev.pointerId); }
 });
 canvas.addEventListener('pointermove', ev => {
+  if (touchPts.has(ev.pointerId)) {
+    const [px, py] = touchPts.get(ev.pointerId), dx = ev.clientX - px, dy = ev.clientY - py;
+    if (touchPts.size > 1) {
+      const before = pinchDist(); touchPts.set(ev.pointerId, [ev.clientX, ev.clientY]);
+      if (before > 0 && !(S.camMode === 'fp' && !S.editing)) zoomBy(before / pinchDist());
+      return;
+    }
+    touchPts.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    if (!S.editing) {
+      if (S.camMode === 'chase') { S.orbitYaw = wrapPi(S.orbitYaw + dx * 0.006); S.orbitPitch = clamp(S.orbitPitch + dy * 0.005, -rad(12), rad(70)); S.touchLooked = true; }
+      else if (S.camMode === 'fp') { S.yaw = clamp(S.yaw + dx * 0.005, -rad(165), rad(165)); S.pitch = clamp(S.pitch + dy * 0.005, -rad(60), rad(60)); S.touchLooked = true; }
+      return;
+    }
+  }
   if (document.pointerLockElement === canvas && S.camMode === 'chase') {
     S.orbitYaw = wrapPi(S.orbitYaw + ev.movementX * 0.003); S.orbitPitch = clamp(S.orbitPitch + ev.movementY * 0.0025, -rad(12), rad(70));
     return;
@@ -131,11 +160,9 @@ canvas.addEventListener('pointermove', ev => {
   }
   canvas.style.cursor = drag ? 'grabbing' : pick(w) ? 'grab' : 'default';
 });
-canvas.addEventListener('pointerup', ev => {
-  if (!drag) return;
-  if (!drag.moved) S.undoStack.pop();
-  else { if (!ev.altKey) snapItem(drag.it); else if (drag.it.kind === 'car') drag.it.ref.bay = null; commitEdit(); }
-  drag = null;
+for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type, ev => {
+  const wasTouch = touchPts.delete(ev.pointerId);
+  endDrag(wasTouch ? !snapDrop : ev.altKey);
 });
 canvas.addEventListener('wheel', ev => {
   ev.preventDefault();
@@ -148,6 +175,9 @@ editPanel.querySelectorAll('[data-add]').forEach(b => b.onclick = () => addItem(
 document.getElementById('btnDelete').onclick = deleteSelected;
 document.getElementById('btnRotL').onclick = () => rotateSelected(-5, false);
 document.getElementById('btnRotR').onclick = () => rotateSelected(5, false);
+document.getElementById('btnSnapL').onclick = () => rotateSelected(-1, true);
+document.getElementById('btnSnapR').onclick = () => rotateSelected(1, true);
+document.getElementById('edSnap').onchange = e => { snapDrop = e.target.checked; };
 document.getElementById('btnUndo').onclick = undo;
 document.getElementById('btnReset').onclick = () => { pushUndo(); S.state = clone(S.attemptStart); rebuildStatic(); select(null); syncLayoutInputs(); };
 document.getElementById('btnReload').onclick = () => { loadPreset(S.currentPreset); syncLayoutInputs(); select(null); };
@@ -172,6 +202,10 @@ for (const [id, k] of Object.entries(LY)) {
 // ===================================================================
 // Keyboard
 // ===================================================================
+// actions shared by the keys and the touch controls
+export function toggleGear() { if (settings.trans !== 'arcade') S.gear = S.gear === 'R' ? 'F' : 'R'; }
+export function resetView() { S.yaw = 0; S.pitch = -0.08; S.orbitYaw = S.orbitPitch = 0; }
+export function toggleMirrors() { if (S.camMode === 'fp' && !S.editing) settings.insetsFp = !settings.insetsFp; else settings.insetsTop = !settings.insetsTop; saveSettings(); layoutStrip(); }
 export function anyModalOpen() { return document.querySelector('.modal.open'); }
 addEventListener('keydown', ev => {
   initAudio();
@@ -184,7 +218,7 @@ addEventListener('keydown', ev => {
   switch (ev.code) {
     case 'KeyE': setEditing(!S.editing); break;
     case 'KeyH': document.getElementById('help').classList.toggle('collapsed'); break;
-    case 'KeyM': if (S.camMode === 'fp' && !S.editing) settings.insetsFp = !settings.insetsFp; else settings.insetsTop = !settings.insetsTop; saveSettings(); layoutStrip(); break;
+    case 'KeyM': toggleMirrors(); break;
     case 'Equal': case 'NumpadAdd': zoomBy(1 / 1.1); break;
     case 'Minus': case 'NumpadSubtract': zoomBy(1.1); break;
   }
@@ -195,10 +229,10 @@ addEventListener('keydown', ev => {
     if (ev.code === 'BracketRight') rotateSelected(ev.shiftKey ? 1 : 5, ev.shiftKey);
     if (ev.code === 'KeyP') { pushUndo(); S.state.learner.x = mouseWorld[0]; S.state.learner.z = mouseWorld[1]; select({ kind: 'learner' }); }
   } else {
-    if (ev.code === 'KeyR' && settings.trans !== 'arcade') S.gear = S.gear === 'R' ? 'F' : 'R';
+    if (ev.code === 'KeyR') toggleGear();
     if (ev.code === 'KeyC') S.steer = 0;
     if (ev.code === 'KeyV') cycleCamera();
-    if (ev.code === 'KeyX') { S.yaw = 0; S.pitch = -0.08; S.orbitYaw = S.orbitPitch = 0; }
+    if (ev.code === 'KeyX') resetView();
   }
 });
 addEventListener('keyup', ev => { keys[ev.code] = false; });

@@ -15,8 +15,12 @@ export let stripRect = null;
 export function stripVisible() { return !S.editing && (S.camMode === 'fp' ? settings.insetsFp : settings.insetsTop); }
 export function layoutStrip() {
   const W = innerWidth, H = innerHeight;
-  const h = Math.round(Math.min(H * 0.2, W * 0.12)), wm = Math.round(h * 4 / 3), wc = Math.round(h * 16 / 9), gap = 10, top = 10;
+  // on a narrow (phone) screen let the strip take most of the width so the mirrors stay readable
+  const h = Math.round(Math.min(H * 0.2, Math.max(W * 0.12, Math.min((W - 36) / 4.45, 80)))), wm = Math.round(h * 4 / 3), wc = Math.round(h * 16 / 9), gap = 10;
   const total = wm * 2 + wc + gap * 2, x0 = Math.round((W - total) / 2);
+  // drop below the mode badge and top buttons when they'd overlap
+  const badge = document.getElementById('modeBadge').getBoundingClientRect(), btns = document.getElementById('topButtons').getBoundingClientRect();
+  const top = x0 < badge.right + gap || x0 + total > btns.left - gap ? Math.round(Math.max(badge.bottom, btns.bottom)) + 6 : 10;
   const rects = { left: [x0, top, wm, h], cam: [x0 + wm + gap, top, wc, h], right: [x0 + wm + gap + wc + gap, top, wm, h] };
   const ids = { left: 'frLeft', cam: 'frCam', right: 'frRight' };
   for (const k in rects) {
@@ -25,7 +29,7 @@ export function layoutStrip() {
     stripQuads[k].scale.set(w, hh, 1); stripQuads[k].position.set(x + w / 2, H - (y + hh / 2), 0);
   }
   stripCam.right = W; stripCam.top = H; stripCam.updateProjectionMatrix();
-  stripRect = { h: h + top * 2 };
+  stripRect = { h: top + h + 10 };
   stripEl.style.display = stripVisible() ? 'block' : 'none';
 }
 export function placeCam(cam, pose, f, y, r, df, dy, dr) {
@@ -35,16 +39,31 @@ export function placeCam(cam, pose, f, y, r, df, dy, dr) {
 export function updateTopCam() {
   const W = innerWidth, H = innerHeight, asp = W / H;
   // keep the scene clear of the mirror strip (top) and the gear/steering HUD (bottom)
+  // (and of the touch controls, or the edit panel when a narrow screen shows it as a bottom sheet)
   const topPx = stripVisible() ? stripRect.h : 0;
-  const botPx = S.editing ? 0 : H - document.getElementById('hudBottom').getBoundingClientRect().top + 6;
+  const ep = S.editing ? document.getElementById('editPanel').getBoundingClientRect() : null, sheet = ep && ep.width > W * 0.6;
+  const botPx = sheet ? H - ep.top + 6 : S.editing ? 0 : H - hudTop() + 6;
   const avail = Math.max(0.3, (H - topPx - botPx) / H);
   let cx, cz, halfH;
   const e = areaExtents(); cx = (e.x0 + e.x1) / 2; cz = (e.z0 + e.z1) / 2;
   halfH = Math.max((e.z1 - e.z0) / 2, (e.x1 - e.x0) / 2 * avail / asp) * S.zoomFixed;
-  if (S.editing) { const panel = document.getElementById('editPanel').getBoundingClientRect().right / W; halfH /= (1 - panel); cx -= (halfH * 2 * asp) * panel / 2; }
+  if (S.editing && !sheet) { const panel = ep.right / W; halfH /= (1 - panel); cx -= (halfH * 2 * asp) * panel / 2; }
   const Ht = 2 * halfH / avail, Wt = Ht * asp, bottom = -halfH - Ht * botPx / H;
   Object.assign(topCam, { left: -Wt / 2, right: Wt / 2, bottom, top: bottom + Ht });
   topCam.position.set(cx, 80, cz); topCam.lookAt(cx, 0, cz); topCam.updateProjectionMatrix();
+}
+// In landscape the touch controls sit in the bottom corners, beside the read-out, and the lot may show behind them.
+export function hudTop() {
+  let t = innerHeight;
+  for (const id of innerHeight > innerWidth ? ['hudBottom', 'touchSteer', 'touchPedals'] : ['hudBottom']) { const el = document.getElementById(id); if (el.getClientRects().length) t = Math.min(t, el.getBoundingClientRect().top); }
+  return t;
+}
+// Perspective cameras keep a vertical field of view, which gets very narrow on a portrait phone;
+// widen it there so at least the horizontal view of a 4:3 screen fits.
+export function fitFov(cam, vfov) {
+  const asp = innerWidth / innerHeight;
+  cam.fov = asp >= 4 / 3 ? vfov : Math.min(110, 2 * Math.atan(Math.tan(rad(vfov) / 2) * (4 / 3) / asp) * 180 / Math.PI);
+  cam.aspect = asp; cam.updateProjectionMatrix();
 }
 // Third-person chase view: behind and above the car, swinging round smoothly as it turns.
 // Click to capture the mouse and orbit; the view stays where it is put until X resets it.
@@ -69,13 +88,13 @@ export function updateChaseCam(dt) {
   const rr = hit ? Math.max(0.6, hit.distance - 0.3) : r;
   chaseCam.position.set(tx + dir.x * rr, 0.9 + dir.y * rr, tz + dir.z * rr);
   chaseCam.up.set(0, 1, 0); chaseCam.lookAt(tx, 0.9, tz);
-  chaseCam.aspect = innerWidth / innerHeight; chaseCam.updateProjectionMatrix();
+  fitFov(chaseCam, 60);
 }
 export function updateFpCam() {
   const p = S.state.learner, e = toWorld(p, S.LG.eyeF, S.LG.eyeR);
   fpCam.position.set(e[0], S.LG.eyeY, e[1]);
   fpCam.rotation.set(S.pitch, -p.h - Math.PI / 2 + S.yaw, 0);
-  fpCam.aspect = innerWidth / innerHeight; fpCam.updateProjectionMatrix();
+  fitFov(fpCam, 72);
 }
 export function updateMirrorCams() {
   const p = S.state.learner, W = S.LG.width, belt = S.LG.beltY;

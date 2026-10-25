@@ -50,6 +50,21 @@ You need an internet connection, because the 3D library ([three.js](https://thre
 | Esc | Settings |
 | H | Show or hide the controls panel |
 
+### Phones and tablets
+
+On a touch screen the keyboard help is replaced by on-screen controls. They appear on phones and tablets straight away, and on a laptop with a touchscreen as soon as you touch it. Using the mouse or a key brings the keyboard help back.
+
+| Control | Action |
+|---|---|
+| ◀ / ▶ (bottom left) | Hold to turn the steering wheel |
+| Centre | Centre the steering wheel |
+| ▲ Forward / ▼ Reverse (bottom right) | Hold to drive; let go to stop. In manual and automatic it's **Go** plus a **Gear** button |
+| View · Reset view · Mirrors | Change camera, reset the look direction, show or hide the mirror strip |
+| Drag the scene | Look around in chase cam and driver's seat |
+| Pinch | Zoom |
+
+In edit mode, drag things with a finger. **Snap ⟲ / ⟳** line the selected item up with the bays, and untick **Snap dropped cars into bays** to place cars freely (the touch version of holding Alt). On a narrow screen the edit panel sits along the bottom. Landscape gives the most room, though portrait works too.
+
 ### Views
 
 - **Top-down:** an overhead view of the whole car park section. Best for learning where the car is relative to the lines.
@@ -131,7 +146,8 @@ No build step: `index.html` loads `src/main.js` as an ES module, and three.js co
 | `src/driving.js` | Driving the car each frame |
 | `src/cameras.js` | Top-down, chase, driver's-seat and mirror cameras, and the mirror strip |
 | `src/hud.js` | Gear and steering HUD, controls help |
-| `src/input.js` | Edit mode, mouse and keyboard |
+| `src/input.js` | Edit mode, mouse, touch gestures and keyboard |
+| `src/touch.js` | On-screen touch controls, and switching between them and the keyboard help |
 | `src/modals.js` | Scenario picker and settings dialogs |
 | `src/audio.js` | Parking-sensor beeps and the contact bump |
 | `src/tests.js` | The `?test` page |
