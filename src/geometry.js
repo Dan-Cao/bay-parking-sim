@@ -118,21 +118,26 @@ export function ackermann(g, delta) {
 // ===================================================================
 export function buildBays(L) {
   // Angled bays are parallelograms whose side lines are long enough to hold a full bayWidth x bayLength rectangle.
-  const a = rad(L.angle), spacing = L.bayWidth / Math.sin(a), sideLen = L.bayLength + L.bayWidth / Math.tan(a), out = [];
+  // An angle of 0 means parallel bays along the kerb: bayLength runs along the road and bayWidth out from the kerb,
+  // so the long lines (road side and kerb side) are the 'side' lines and the short ones the ends.
+  const parallel = L.angle === 0, a = rad(L.angle), out = [];
+  const spacing = parallel ? L.bayLength : L.bayWidth / Math.sin(a), sideLen = parallel ? L.bayWidth : L.bayLength + L.bayWidth / Math.tan(a);
   for (const side of (L.rows === 2 ? [1, -1] : [1])) {
-    const z0 = side * L.aisleWidth / 2, ax = [Math.cos(a), side * Math.sin(a)];
-    const x0 = -L.baysPerRow * spacing / 2 - sideLen * ax[0] / 2;
+    const z0 = side * L.aisleWidth / 2, ax = parallel ? [1, 0] : [Math.cos(a), side * Math.sin(a)], outDir = parallel ? [0, side] : ax;
+    const x0 = -L.baysPerRow * spacing / 2 - sideLen * outDir[0] / 2;
     for (let i = 0; i < L.baysPerRow; i++) {
       const p0 = [x0 + i * spacing, z0], p1 = [x0 + (i + 1) * spacing, z0];
-      const p2 = [p1[0] + sideLen * ax[0], p1[1] + sideLen * ax[1]], p3 = [p0[0] + sideLen * ax[0], p0[1] + sideLen * ax[1]];
+      const p2 = [p1[0] + sideLen * outDir[0], p1[1] + sideLen * outDir[1]], p3 = [p0[0] + sideLen * outDir[0], p0[1] + sideLen * outDir[1]];
       const poly = [p0, p1, p2, p3], c = [(p0[0] + p1[0] + p2[0] + p3[0]) / 4, (p0[1] + p1[1] + p2[1] + p3[1]) / 4];
-      const edges = [{ a: p0, b: p1, type: 'front' }, { a: p1, b: p2, type: 'side' }, { a: p2, b: p3, type: 'back' }, { a: p3, b: p0, type: 'side' }];
+      const edges = parallel
+        ? [{ a: p0, b: p1, type: 'side' }, { a: p1, b: p2, type: 'front' }, { a: p2, b: p3, type: 'side', kerb: true }, { a: p3, b: p0, type: 'back' }]
+        : [{ a: p0, b: p1, type: 'front' }, { a: p1, b: p2, type: 'side' }, { a: p2, b: p3, type: 'back' }, { a: p3, b: p0, type: 'side' }];
       for (const e of edges) {
         let nx = -(e.b[1] - e.a[1]), nz = e.b[0] - e.a[0]; const l = Math.hypot(nx, nz); nx /= l; nz /= l;
         if ((c[0] - e.a[0]) * nx + (c[1] - e.a[1]) * nz < 0) { nx = -nx; nz = -nz; }
         e.n = [nx, nz];
       }
-      out.push({ row: side, idx: i, poly, centre: c, axis: ax, axisAngle: Math.atan2(ax[1], ax[0]), edges });
+      out.push({ row: side, idx: i, poly, centre: c, axis: ax, axisAngle: Math.atan2(ax[1], ax[0]), edges, parallel });
     }
   }
   return out;
@@ -147,7 +152,8 @@ export function buildStructures(L, bays) {
     const xa = Math.min(first.poly[3][0], first.poly[0][0]), xb = Math.max(last.poly[2][0], last.poly[1][0]);
     if (L.back === 'kerb') out.push({ kind: 'kerb', poly: rectWorld(xa, xb, zb + side * 0.08, zb + side * 0.38), height: 0.13 });
     if (L.back === 'wall') out.push({ kind: 'wall', poly: rectWorld(xa - 0.5, xb + 0.5, zb + side * 0.3, zb + side * 0.55), height: 2.4 });
-    if (L.pillars) for (let i = 2; i < row.length - 1; i += 3) {
+    // pillars belong to a car park, not a street of parallel bays
+    if (L.pillars && L.angle) for (let i = 2; i < row.length - 1; i += 3) {
       const b = row[i + 1];
       const p = [b.poly[3][0] - b.axis[0] * 0.35, b.poly[3][1] - b.axis[1] * 0.35];
       out.push({ kind: 'pillar', poly: polyWorld({ x: p[0], z: p[1], h: b.axisAngle }, rectPts(-0.225, 0.225, -0.225, 0.225)), height: 2.6 });

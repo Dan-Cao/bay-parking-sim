@@ -1,6 +1,6 @@
 // Collisions, the park checker, attempts and the result panel with its highlights.
 import * as THREE from 'three';
-import { ANGLE_TOL, DOOR_MIN, EXIT_RADIUS, HALF_LINE } from './config.js';
+import { ANGLE_TOL, DOOR_MIN, EXIT_RADIUS, HALF_LINE, KERB_MAX } from './config.js';
 import { carShapes, deg, edgeDist, overlapFrac, pointInPoly, pointPolyDist, polysOverlap, raySegDist, toLocal, toWorld, wrapPi } from './geometry.js';
 import { S } from './state.js';
 import { disposeTree, overlayMat, overlayMesh, polyGeom, scene, stripGeom } from './scene.js';
@@ -73,7 +73,8 @@ export function evaluatePark(pose, contacts) {
     for (const e of edges) for (const p of pts) { const d = edgeDist(e, p); worst = Math.min(worst, d); if (d < -HALF_LINE) { hl.points.push(p); if (!hl.edges.includes(e)) hl.edges.push(e); } }
     return worst;
   };
-  const bw = lineCheck(sides, [...sh.body, ...sh.mirrors.flat()]);
+  // a parallel bay's kerb line only counts the body: mirrors overhang the pavement above the kerb
+  const bw = Math.min(lineCheck(sides.filter(e => !e.kerb), [...sh.body, ...sh.mirrors.flat()]), lineCheck(sides.filter(e => e.kerb), sh.body));
   checks.push({ id: 'body', label: 'Body & mirrors inside side lines', status: bw < -HALF_LINE ? 'fail' : 'pass', value: fmtLine(bw) });
   const lw = lineCheck(ends, sh.body);
   checks.push({ id: 'length', label: 'Within bay length', status: lw < -HALF_LINE ? 'fail' : 'pass', value: fmtLine(lw) });
@@ -81,6 +82,12 @@ export function evaluatePark(pose, contacts) {
   const angOk = deg(ad) <= ANGLE_TOL + 1e-9;
   if (!angOk) hl.angle = true;
   checks.push({ id: 'angle', label: `Straight (≤ ${ANGLE_TOL}°)`, status: angOk ? 'pass' : 'fail', value: `${deg(ad).toFixed(1)}°` });
+  // parallel bays: how far the kerb-side tyres are from the kerb line
+  const kerbEdge = bay.edges.find(e => e.kerb);
+  if (kerbEdge) {
+    const kd = Math.min(...sh.tyres.flatMap(t => t.map(p => edgeDist(kerbEdge, p)))) - HALF_LINE, kOk = kd <= KERB_MAX;
+    checks.push({ id: 'kerb', label: `Close to the kerb (≤ ${KERB_MAX * 100} cm)`, status: kOk ? 'pass' : 'warn', value: kd < 0 ? 'on the line' : `${Math.round(kd * 100)} cm` });
+  }
   checks.push({ id: 'contacts', label: 'No contact', status: contacts ? 'fail' : 'pass', value: contacts ? `${contacts} contact${contacts > 1 ? 's' : ''}` : 'none' });
   const dg = doorGap(pose);
   const dOk = dg.gap >= DOOR_MIN;

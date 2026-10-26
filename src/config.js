@@ -8,6 +8,7 @@ export const STOP_CHECK_TIME = 3;
 export const EXIT_RADIUS = 1.2;
 export const DOOR_MIN = 0.60;
 export const ANGLE_TOL = 5;               // degrees
+export const KERB_MAX = 0.30;             // m, tyres to kerb line in a parallel bay
 export const SENSOR_RANGE = 1.5;
 
 // Learner car presets. MiTo figures are manufacturer-ish; turning circle is treated as kerb-to-kerb.
@@ -63,6 +64,15 @@ export const PRESETS = {
     cars: [
       { row: 1, idx: 0, type: 'hatch' }, { row: 1, idx: 1, type: 'sedan' }, { row: 1, idx: 2, type: 'suv' }, { row: 1, idx: 4, type: 'sedan' }, { row: 1, idx: 5, type: 'hatch' }, { row: 1, idx: 6, type: 'van' }, { row: 1, idx: 7, type: 'hatch' },
       { row: -1, idx: 0, type: 'sedan' }, { row: -1, idx: 1, type: 'hatch' }, { row: -1, idx: 2, type: 'suv' }, { row: -1, idx: 3, type: 'sedan' }, { row: -1, idx: 4, type: 'hatch' }, { row: -1, idx: 5, type: 'sedan' }, { row: -1, idx: 6, type: 'suv' },
+    ],
+  },
+  parallel: {
+    name: 'Parallel parking', desc: 'A street with parallel bays along both kerbs. Pull up alongside the car ahead of a gap, then reverse in, close to the kerb.',
+    layout: { rows: 2, baysPerRow: 6, angle: 0, bayWidth: 2.1, bayLength: 6.0, aisleWidth: 7.0, back: 'kerb', pillars: false },
+    start: 'right',   // drive on the left, so the near kerb (the +z row) is on the learner's left
+    cars: [
+      { row: 1, idx: 0, type: 'sedan' }, { row: 1, idx: 1, type: 'hatch' }, { row: 1, idx: 2, type: 'suv' }, { row: 1, idx: 4, type: 'sedan' }, { row: 1, idx: 5, type: 'van' },
+      { row: -1, idx: 0, type: 'hatch', flip: true }, { row: -1, idx: 2, type: 'sedan', flip: true }, { row: -1, idx: 3, type: 'suv', flip: true }, { row: -1, idx: 5, type: 'hatch', flip: true },
     ],
   },
 };

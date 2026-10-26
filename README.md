@@ -80,6 +80,7 @@ In edit mode, drag things with a finger. **Snap ⟲ / ⟳** line the selected it
 | Tight / wonky neighbour | One neighbour is over the line and at an angle, so the gap is smaller than it looks. |
 | Angled bays | 45° bays on both sides of a one-way aisle. |
 | Narrow aisle | A 4.6 m aisle with walls and pillars, like a multi-storey. Little room to swing out. |
+| Parallel parking | A street with 6 m parallel bays along both kerbs. You start on the left of the road; pull up alongside the car ahead of a gap and reverse in, close to the kerb. |
 
 ## The park checker
 
@@ -91,8 +92,9 @@ In edit mode, drag things with a finger. **Snap ⟲ / ⟳** line the selected it
 | Angle | Within 5° of the bay | | More than 5° off |
 | Contacts | No contact during the attempt | | Any contact |
 | Driver's door | At least 60 cm to open the door | Less than 60 cm | |
+| Kerb (parallel bays only) | Tyres within 30 cm of the kerb line | Further out | |
 
-Each check shows the measured value, and problems are highlighted on the car in the scene. Angled bays are judged against their own angle.
+Each check shows the measured value, and problems are highlighted on the car in the scene. Angled bays are judged against their own angle. In a parallel bay, the mirrors may overhang the kerb line, because they're above the pavement; only the body counts against it.
 
 Touching another car, a pillar or a wall stops the car, flashes the contact point and counts as a fault. You can back off and carry on.
 
@@ -105,7 +107,7 @@ Press **E**. Driving pauses and the view switches to top-down.
 - **Rotate** while dragging with **[ ]** or the mouse wheel. Hold **Shift** to snap to the bay angle.
 - **P** moves the learner's car to the cursor.
 - **Add** hatches, sedans, SUVs, vans, pillars and walls from the side panel. **Del** removes the selected one.
-- **Layout:** one or two rows, bays per row, bay angle (90°, 60°, 45°), bay width and length, aisle width, kerb or wall at the back, pillars.
+- **Layout:** one or two rows, bays per row, bay angle (90°, 60°, 45° or parallel), bay width and length, aisle width, kerb or wall at the back, pillars.
 - **Ctrl+Z** undoes. **Reset** returns to how things were when you last left edit mode. **Reload preset** starts the scenario again.
 
 ## Settings (Esc)
